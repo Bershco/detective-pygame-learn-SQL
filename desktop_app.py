@@ -854,15 +854,15 @@ class DetectiveDesktopApp:
         draw_rounded_rect(self.screen, CARD, rect, radius=16, border=2, border_color=ACCENT)
         header = self.header_font.render("Badges", True, DARK)
         self.screen.blit(header, (rect.x + 14, rect.y + 10))
-        badges = self.earned_badges or ["No badge yet"]
         colors = {
             "Bronze Streak": BRONZE,
             "Silver Streak": SILVER,
             "Gold Streak": GOLD,
-            "No badge yet": MUTED,
         }
+        if not self.earned_badges:
+            return
         x = rect.x + 18
-        for badge in badges:
+        for badge in self.earned_badges:
             width = max(110, self.small_font.size(badge)[0] + 26)
             pill = pygame.Rect(x, rect.y + 36, width, 24)
             draw_rounded_rect(
