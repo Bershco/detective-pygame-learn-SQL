@@ -92,11 +92,40 @@ Each run selects one challenge variant per level, which reduces repetition while
 - Streak badges are awarded at 3, 5, and 7.
 - If the player has a streak of 2 or more, the game asks for confirmation before spending it on a hint.
 
-## Docs
+## How It Works
 
-- [GAMEPLAY.md](/home/roee/week_1/task_4/GAMEPLAY.md): gameplay rules and architecture notes
-- [RELEASE.md](/home/roee/week_1/task_4/RELEASE.md): packaging, release, and install instructions
-- [PROGRESS.md](/home/roee/week_1/task_4/PROGRESS.md): current desktop and packaging milestone log
+Startup flow:
+
+1. Load the challenge bank from [challenges.json](/home/roee/week_1/task_4/challenges.json).
+2. Group challenges by level and pick one variant per level for the run.
+3. Load one story seed from [crime_stories.json](/home/roee/week_1/task_4/crime_stories.json).
+4. Resolve resource and save-data paths through [app_paths.py](/home/roee/week_1/task_4/app_paths.py).
+5. Start the `pygame` case board and track score, streaks, hints, timing, and leaderboard state.
+
+Challenge model:
+
+- each level stores the story prompt, the expected query, hint data, and success text
+- validation is result-based rather than string-matching SQL
+- [validation.py](/home/roee/week_1/task_4/validation.py) allows only safe `SELECT` queries and compares learner output to the expected result set
+
+Scoring model:
+
+```text
+max(25, 150 - elapsed_seconds - 15 * (attempts - 1))
+```
+
+Badge bonuses:
+
+- streak 3: Bronze Streak, +30
+- streak 5: Silver Streak, +50
+- streak 7: Gold Streak, +70
+
+Hint and completion rules:
+
+- a level is perfect only if it is solved with no wrong attempt and no hint usage
+- wrong attempts first consume the warm-up buffer before breaking a perfect run
+- hints escalate at 10, 20, 30, 40, and 42 presses, with extra easter-egg lines beyond that
+- if the player has a streak of 2 or more, the game asks for confirmation before a hint breaks it
 
 ## Platform Support
 
@@ -104,7 +133,61 @@ Each run selects one challenge variant per level, which reduces repetition while
 - Supported by packaging design: Windows, Linux, and macOS
 - Important: `PyInstaller` builds must be produced on each target operating system
 
-## Git Notes
+## Packaging, Download, And Install
+
+The supported release path is a packaged desktop build created with `PyInstaller`.
+
+Build requirements:
+
+- Python 3.12
+- [requirements.txt](/home/roee/week_1/task_4/requirements.txt) for runtime dependencies
+- [requirements-packaging.txt](/home/roee/week_1/task_4/requirements-packaging.txt) for packaging dependencies
+
+Build commands:
+
+```bash
+pip install -r requirements-packaging.txt
+python3 build_release.py
+```
+
+If you use the local alias:
+
+```bash
+agentenv
+pip install -r requirements-packaging.txt
+python3 build_release.py
+```
+
+The build is driven by [build_release.py](/home/roee/week_1/task_4/build_release.py) and [sql_detective_academy.spec](/home/roee/week_1/task_4/sql_detective_academy.spec). The packaged output is created in `dist/SQLDetectiveAcademy/`.
+
+What gets bundled:
+
+- the game code
+- the SQLite database
+- challenge and story JSON files
+- the four portrait assets
+
+Save data:
+
+- Windows: `%APPDATA%/SQLDetectiveAcademy/leaderboard.json`
+- macOS: `~/Library/Application Support/SQLDetectiveAcademy/leaderboard.json`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/SQLDetectiveAcademy/leaderboard.json`
+
+Recommended release flow:
+
+1. Build on Linux for Linux, on Windows for Windows, and on macOS for macOS.
+2. Smoke-test the packaged executable on that operating system.
+3. Archive the `dist/SQLDetectiveAcademy/` output.
+4. Upload the archives to a GitHub Release.
+
+Player install flow:
+
+1. Download the archive for the correct operating system from the GitHub Release page.
+2. Extract it.
+3. Open the `SQLDetectiveAcademy` executable or app inside the extracted folder.
+
+## Repository Notes
 
 - packaged build output in `build/` and `dist/` is git-ignored
 - local leaderboard progress is stored outside the repo in the user data directory for packaged builds
+- extra markdown files were intentionally removed so `README.md` is the single maintained project document

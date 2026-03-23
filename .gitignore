@@ -18,6 +18,10 @@ env/
 build/
 dist/
 
+# Markdown policy
+*.md
+!README.md
+
 # Local runtime data
 leaderboard.json
 
