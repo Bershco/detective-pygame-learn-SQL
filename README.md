@@ -125,7 +125,7 @@ Hint and completion rules:
 ## Platform Support
 
 - Verified in this workspace: Linux source run and packaging flow
-- Supported by packaging design: Windows, Linux, and macOS
+- Supported by packaging design: Windows and Linux
 - Important: `PyInstaller` builds must be produced on each target operating system
 
 ## Packaging, Download, And Install
@@ -165,19 +165,18 @@ What gets bundled:
 Save data:
 
 - Windows: `%APPDATA%/SQLDetectiveAcademy/leaderboard.json`
-- macOS: `~/Library/Application Support/SQLDetectiveAcademy/leaderboard.json`
 - Linux: `${XDG_DATA_HOME:-~/.local/share}/SQLDetectiveAcademy/leaderboard.json`
 
 Recommended release flow:
 
-1. Build on Linux for Linux, on Windows for Windows, and on macOS for macOS.
+1. Build on Linux for Linux and on Windows for Windows.
 2. Smoke-test the packaged executable on that operating system.
 3. Archive the `dist/SQLDetectiveAcademy/` output.
 4. Upload the archives to a GitHub Release.
 
 Automation:
 
-- [`.github/workflows/build-release.yml`](/home/roee/week_1/task_4/.github/workflows/build-release.yml) builds release archives on Linux, Windows, and macOS when a tag such as `V1` is pushed
+- [`.github/workflows/build-release.yml`](/home/roee/week_1/task_4/.github/workflows/build-release.yml) builds release archives on Linux and Windows when a tag such as `V1` is pushed
 - [release_v1_notes.txt](/home/roee/week_1/task_4/release_v1_notes.txt) contains a ready-to-paste title and body for the GitHub Release form
 
 Player install flow:

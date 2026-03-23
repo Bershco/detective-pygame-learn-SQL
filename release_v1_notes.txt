@@ -13,7 +13,6 @@ What is included:
 Files in this release:
 - Linux: SQLDetectiveAcademy-linux-x86_64.tar.gz
 - Windows: SQLDetectiveAcademy-windows-x86_64.zip
-- macOS: SQLDetectiveAcademy-macos-universal.tar.gz
 
 Install:
 1. Download the archive for your operating system.
@@ -23,4 +22,4 @@ Install:
 Notes:
 - Save data is stored in the user application data directory, not inside the install folder.
 - Linux builds were verified locally in this project workspace.
-- Windows and macOS artifacts are intended to be produced through the GitHub Actions release workflow on tags.
+- Windows artifacts are intended to be produced through the GitHub Actions release workflow on tags.
