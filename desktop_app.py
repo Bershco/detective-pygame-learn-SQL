@@ -468,7 +468,7 @@ class DetectiveDesktopApp:
         self.leaderboard_entries = load_json(LEADERBOARD_PATH, [])
         self.character_images = self._load_character_images()
 
-        self.editor = TextInput((920, 280, 485, 160))
+        self.editor = TextInput((920, 180, 485, 160))
         self.level_buttons: list[Button] = []
         self.preview_tabs: list[Button] = []
         self.current_preview_columns: list[str] = []
@@ -563,7 +563,7 @@ class DetectiveDesktopApp:
         width = 46
         gap = 4
         for level in range(1, 11):
-            rect = (start_x + (level - 1) * (width + gap), 192, width, 38)
+            rect = (start_x + (level - 1) * (width + gap), 92, width, 38)
             self.level_buttons.append(
                 Button(rect, str(level), lambda selected=level: self.open_level(selected), GOLD)
             )
@@ -718,11 +718,11 @@ class DetectiveDesktopApp:
         return False
 
     def _handle_action_buttons(self, pos):
-        run_rect = pygame.Rect(920, 480, 154, 42)
-        hint_rect = pygame.Rect(1085, 480, 154, 42)
-        new_game_rect = pygame.Rect(1250, 480, 154, 42)
-        hint_prev_rect = pygame.Rect(1326, 543, 28, 24)
-        hint_next_rect = pygame.Rect(1360, 543, 28, 24)
+        run_rect = pygame.Rect(920, 354, 154, 42)
+        hint_rect = pygame.Rect(1085, 354, 154, 42)
+        new_game_rect = pygame.Rect(1250, 354, 154, 42)
+        hint_prev_rect = pygame.Rect(1326, 417, 28, 24)
+        hint_next_rect = pygame.Rect(1360, 417, 28, 24)
         if run_rect.collidepoint(pos):
             self.run_query()
         elif hint_rect.collidepoint(pos):
@@ -1053,9 +1053,9 @@ class DetectiveDesktopApp:
         )
 
     def _draw_right_panel(self):
-        draw_rounded_rect(self.screen, PANEL, pygame.Rect(900, 150, 520, 750), radius=18)
+        draw_rounded_rect(self.screen, PANEL, pygame.Rect(900, 24, 520, 876), radius=18)
         header = self.header_font.render("Case Files", True, DARK)
-        self.screen.blit(header, (920, 160))
+        self.screen.blit(header, (920, 34))
 
         for button, level in zip(self.level_buttons, range(1, 11)):
             icon, disabled = self.level_button_state(level)
@@ -1065,19 +1065,19 @@ class DetectiveDesktopApp:
             button.draw(self.screen, self.small_font)
 
         editor_label = self.header_font.render("SQL Editor", True, DARK)
-        self.screen.blit(editor_label, (920, 248))
+        self.screen.blit(editor_label, (920, 122))
         self.editor.draw(self.screen, self.mono_font)
 
-        Button((920, 480, 154, 42), "Run Query", lambda: None, SUCCESS).draw(
+        Button((920, 354, 154, 42), "Run Query", lambda: None, SUCCESS).draw(
             self.screen, self.body_font
         )
-        Button((1085, 480, 154, 42), "Show Hint", lambda: None, WARNING).draw(
+        Button((1085, 354, 154, 42), "Show Hint", lambda: None, WARNING).draw(
             self.screen, self.body_font
         )
-        Button((1250, 480, 154, 42), "New Game", lambda: None, TITLE).draw(
+        Button((1250, 354, 154, 42), "New Game", lambda: None, TITLE).draw(
             self.screen, self.body_font
         )
-        self._draw_warmup_status_box(pygame.Rect(920, 528, 480, 42))
+        self._draw_warmup_status_box(pygame.Rect(920, 402, 480, 42))
 
         challenge = self.get_challenge()
         feedback = self.feedback_messages.get(
@@ -1100,15 +1100,15 @@ class DetectiveDesktopApp:
             bubble_color = (245, 227, 227)
 
         self._draw_avatar_bubble(
-            pygame.Rect(920, 579, 480, 132),
+            pygame.Rect(920, 453, 480, 132),
             "Desk Sergeant Imani",
             feedback["text"],
             bubble_color=bubble_color,
             allow_query_reveal=feedback["reveal_query"],
         )
         self._draw_feedback_hint_controls()
-        self._draw_badges_box(pygame.Rect(920, 722, 480, 74))
-        self._draw_leaderboard_box(pygame.Rect(920, 804, 480, 96))
+        self._draw_badges_box(pygame.Rect(920, 596, 480, 74))
+        self._draw_leaderboard_box(pygame.Rect(920, 678, 480, 96))
 
     def _draw_warmup_status_box(self, rect):
         state = self.current_state()
@@ -1133,14 +1133,14 @@ class DetectiveDesktopApp:
         hint_text, current_index, total = self._current_hint_history_entry()
         if not hint_text:
             return
-        Button((1326, 543, 28, 24), "<", lambda: None, TITLE).draw(
+        Button((1326, 417, 28, 24), "<", lambda: None, TITLE).draw(
             self.screen, self.small_font
         )
-        Button((1360, 543, 28, 24), ">", lambda: None, TITLE).draw(
+        Button((1360, 417, 28, 24), ">", lambda: None, TITLE).draw(
             self.screen, self.small_font
         )
         counter = self.tiny_font.render(f"{current_index}/{total}", True, MUTED)
-        self.screen.blit(counter, (1292, 548))
+        self.screen.blit(counter, (1292, 422))
 
     def _draw_badges_box(self, rect):
         draw_rounded_rect(self.screen, CARD, rect, radius=16, border=2, border_color=ACCENT)
