@@ -190,6 +190,12 @@ class TextInput:
         self.text = ""
         self.cursor_position = 0
         self.scroll_line_offset = 0
+        self.layout_font = None
+        self.wrap_width = 0
+        self.scrollbar_rail_rect = None
+        self.scrollbar_thumb_rect = None
+        self.dragging_scrollbar = False
+        self.scroll_drag_offset = 0
         self.active = False
         self.cursor_visible = True
         self.cursor_timer = 0
@@ -205,36 +211,36 @@ class TextInput:
         )
         self.cursor_position += len(inserted_text)
 
-    def _line_starts(self) -> list[int]:
-        starts = [0]
-        for index, character in enumerate(self.text):
-            if character == "\n":
-                starts.append(index + 1)
-        return starts
-
-    def _cursor_line_and_column(self) -> tuple[int, int, list[int]]:
-        line_starts = self._line_starts()
-        line_index = 0
-        for idx, start in enumerate(line_starts):
-            if start <= self.cursor_position:
-                line_index = idx
-            else:
+    def _cursor_segment_index(self, wrapped_segments: list[tuple[str, int, int]]) -> int:
+        cursor_segment_index = 0
+        for idx, (_, segment_start, segment_end) in enumerate(wrapped_segments):
+            if segment_start <= self.cursor_position <= segment_end:
+                cursor_segment_index = idx
                 break
-        column = self.cursor_position - line_starts[line_index]
-        return line_index, column, line_starts
+            if idx == len(wrapped_segments) - 1 and self.cursor_position >= segment_end:
+                cursor_segment_index = idx
+        return cursor_segment_index
 
     def _move_vertical(self, direction: int):
-        line_index, column, line_starts = self._cursor_line_and_column()
-        target_line = line_index + direction
-        if target_line < 0 or target_line >= len(line_starts):
+        if self.layout_font is None or self.wrap_width <= 0:
             return
-        current_line_end = (
-            line_starts[target_line + 1] - 1
-            if target_line + 1 < len(line_starts)
-            else len(self.text)
+        wrapped_segments = self._wrapped_segments(self.layout_font, self.wrap_width)
+        current_index = self._cursor_segment_index(wrapped_segments)
+        target_index = current_index + direction
+        if target_index < 0 or target_index >= len(wrapped_segments):
+            return
+        current_text, current_start, current_end = wrapped_segments[current_index]
+        target_text, target_start, target_end = wrapped_segments[target_index]
+        current_column = min(
+            max(self.cursor_position - current_start, 0),
+            len(current_text),
         )
-        target_column = min(column, current_line_end - line_starts[target_line])
-        self.cursor_position = line_starts[target_line] + max(0, target_column)
+        if self.cursor_position > current_end:
+            current_column = len(current_text)
+        target_column = min(current_column, len(target_text))
+        self.cursor_position = target_start + target_column
+        if target_text == "" and target_end == target_start:
+            self.cursor_position = target_start
 
     def _wrapped_segments(self, font, max_width: int) -> list[tuple[str, int, int]]:
         if not self.text:
@@ -270,23 +276,37 @@ class TextInput:
 
         return segments or [("", 0, 0)]
 
+    def _visible_capacity(self, font) -> int:
+        inner = self.rect.inflate(-16, -16)
+        line_height = font.get_height() + 4
+        return max(1, inner.height // line_height)
+
+    def _max_scroll(self, font) -> int:
+        wrapped_segments = self._wrapped_segments(font, self.wrap_width)
+        return max(0, len(wrapped_segments) - self._visible_capacity(font))
+
+    def _update_scroll_from_thumb(self, mouse_y: int):
+        if self.scrollbar_rail_rect is None or self.scrollbar_thumb_rect is None:
+            return
+        travel = self.scrollbar_rail_rect.height - self.scrollbar_thumb_rect.height
+        if travel <= 0 or self.layout_font is None:
+            return
+        thumb_top = mouse_y - self.scroll_drag_offset
+        thumb_top = max(self.scrollbar_rail_rect.y, min(thumb_top, self.scrollbar_rail_rect.bottom - self.scrollbar_thumb_rect.height))
+        relative = (thumb_top - self.scrollbar_rail_rect.y) / travel
+        max_scroll = self._max_scroll(self.layout_font)
+        self.scroll_line_offset = int(round(relative * max_scroll))
+
     def draw(self, screen, font):
         draw_rounded_rect(screen, CARD, self.rect, radius=14, border=2, border_color=ACCENT)
         inner = self.rect.inflate(-16, -16)
+        self.layout_font = font
+        self.wrap_width = inner.width - 4
         line_height = font.get_height() + 4
         visible_capacity = max(1, inner.height // line_height)
-        wrapped_segments = self._wrapped_segments(font, inner.width - 4)
+        wrapped_segments = self._wrapped_segments(font, self.wrap_width)
 
-        cursor_segment_index = 0
-        for idx, (_, segment_start, segment_end) in enumerate(wrapped_segments):
-            if segment_start <= self.cursor_position <= segment_end:
-                cursor_segment_index = idx
-                break
-            if (
-                idx == len(wrapped_segments) - 1
-                and self.cursor_position >= segment_end
-            ):
-                cursor_segment_index = idx
+        cursor_segment_index = self._cursor_segment_index(wrapped_segments)
 
         max_scroll = max(0, len(wrapped_segments) - visible_capacity)
         if cursor_segment_index < self.scroll_line_offset:
@@ -309,8 +329,13 @@ class TextInput:
             if max_scroll > 0:
                 thumb_offset = int(max_thumb_offset * (self.scroll_line_offset / max_scroll))
             thumb_rect = pygame.Rect(rail_rect.x, rail_rect.y + thumb_offset, 4, thumb_height)
+            self.scrollbar_rail_rect = rail_rect
+            self.scrollbar_thumb_rect = thumb_rect
             draw_rounded_rect(screen, (219, 206, 184), rail_rect, radius=2)
             draw_rounded_rect(screen, ACCENT, thumb_rect, radius=2)
+        else:
+            self.scrollbar_rail_rect = None
+            self.scrollbar_thumb_rect = None
         y = inner.y
         for segment_text, _, _ in visible_segments:
             rendered = font.render(segment_text, True, DARK)
@@ -344,11 +369,34 @@ class TextInput:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.scrollbar_thumb_rect and self.scrollbar_thumb_rect.collidepoint(event.pos):
+                self.dragging_scrollbar = True
+                self.scroll_drag_offset = event.pos[1] - self.scrollbar_thumb_rect.y
+                self.active = True
+                return
+            if self.scrollbar_rail_rect and self.scrollbar_rail_rect.collidepoint(event.pos):
+                self.dragging_scrollbar = True
+                self.scroll_drag_offset = self.scrollbar_thumb_rect.height // 2 if self.scrollbar_thumb_rect else 0
+                self._update_scroll_from_thumb(event.pos[1])
+                self.active = True
+                return
             self.active = self.rect.collidepoint(event.pos)
             return
 
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.dragging_scrollbar = False
+            return
+
+        if event.type == pygame.MOUSEMOTION and self.dragging_scrollbar:
+            self._update_scroll_from_thumb(event.pos[1])
+            return
+
         if event.type == pygame.MOUSEWHEEL and self.active:
-            self.scroll_line_offset = max(0, self.scroll_line_offset - event.y)
+            max_scroll = self._max_scroll(self.layout_font) if self.layout_font else 0
+            self.scroll_line_offset = max(
+                0,
+                min(max_scroll, self.scroll_line_offset - event.y),
+            )
             return
 
         if event.type != pygame.KEYDOWN or not self.active:
