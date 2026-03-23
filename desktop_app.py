@@ -862,13 +862,13 @@ class DetectiveDesktopApp:
         challenge = self.get_challenge()
         case_title = challenge["title"].split(": ", 1)[-1]
         self._draw_avatar_bubble(
-            pygame.Rect(50, 170, 810, 215),
+            pygame.Rect(50, 170, 810, 182),
             "Lead Detective Mara Voss",
             f"{case_title}\n{challenge['story']}",
             bubble_color=CARD,
         )
         self._draw_avatar_bubble(
-            pygame.Rect(50, 392, 810, 105),
+            pygame.Rect(50, 364, 810, 86),
             "Analyst Theo",
             f"{challenge['description']}\n\nFocus: {challenge['concept']}",
             bubble_color=(254, 243, 217),
@@ -877,14 +877,14 @@ class DetectiveDesktopApp:
             tab.draw(self.screen, self.small_font)
         preview_title = f"{challenge['tables'][self.active_preview_index]} preview"
         self._draw_table_box(
-            pygame.Rect(50, 580, 810, 145),
+            pygame.Rect(50, 520, 810, 126),
             preview_title,
             self.current_preview_columns,
             self.current_preview_rows,
         )
         result = self.last_results.get(challenge["id"], {"columns": [], "rows": []})
         self._draw_table_box(
-            pygame.Rect(50, 740, 810, 140),
+            pygame.Rect(50, 658, 810, 192),
             "Query Result",
             result["columns"],
             result["rows"],
