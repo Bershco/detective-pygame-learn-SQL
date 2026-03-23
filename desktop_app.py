@@ -789,12 +789,6 @@ class DetectiveDesktopApp:
         draw_rounded_rect(self.screen, CARD, rect, radius=16, border=2, border_color=ACCENT)
         header = self.header_font.render("Badges", True, DARK)
         self.screen.blit(header, (rect.x + 14, rect.y + 10))
-        streak_label = self.small_font.render(
-            f"Current streak {self.current_streak} | Best {self.max_streak}",
-            True,
-            DARK,
-        )
-        self.screen.blit(streak_label, (rect.x + 112, rect.y + 14))
         badges = self.earned_badges or ["No badge yet"]
         colors = {
             "Bronze Streak": BRONZE,
@@ -805,7 +799,7 @@ class DetectiveDesktopApp:
         x = rect.x + 18
         for badge in badges:
             width = max(110, self.small_font.size(badge)[0] + 26)
-            pill = pygame.Rect(x, rect.y + 40, width, 24)
+            pill = pygame.Rect(x, rect.y + 36, width, 24)
             draw_rounded_rect(
                 self.screen,
                 colors.get(badge, GOLD),
