@@ -349,11 +349,12 @@ class DetectiveDesktopApp:
     def _load_preview_tables(self, challenge):
         self.preview_tabs.clear()
         self.active_preview_index = 0
-        start_x = 50
-        for idx, table_name in enumerate(challenge["tables"]):
-            rect = (start_x + idx * 156, 540, 146, 34)
+        if len(challenge["tables"]) > 1:
             self.preview_tabs.append(
-                Button(rect, table_name, lambda selected=idx: self._set_preview(selected), TITLE)
+                Button((50, 540, 40, 34), "<", lambda: self._cycle_preview(-1), TITLE)
+            )
+            self.preview_tabs.append(
+                Button((96, 540, 40, 34), ">", lambda: self._cycle_preview(1), TITLE)
             )
         self._set_preview(0)
 
@@ -362,6 +363,12 @@ class DetectiveDesktopApp:
         table_name = challenge["tables"][index]
         self.active_preview_index = index
         self.current_preview_columns, self.current_preview_rows = preview_table(table_name)
+
+    def _cycle_preview(self, direction):
+        challenge = self.get_challenge()
+        total_tables = len(challenge["tables"])
+        next_index = (self.active_preview_index + direction) % total_tables
+        self._set_preview(next_index)
 
     def open_level(self, level):
         if level > self.unlocked_level():
@@ -707,9 +714,10 @@ class DetectiveDesktopApp:
         )
         for tab in self.preview_tabs:
             tab.draw(self.screen, self.small_font)
+        preview_title = f"{challenge['tables'][self.active_preview_index]} preview"
         self._draw_table_box(
             pygame.Rect(50, 580, 810, 145),
-            "Table Preview",
+            preview_title,
             self.current_preview_columns,
             self.current_preview_rows,
         )
