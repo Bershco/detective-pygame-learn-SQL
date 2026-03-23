@@ -23,9 +23,9 @@ Core files:
 
 The game includes:
 
-- a real SQLite database in [detective.db](/home/roee/week_1/task_4/detective.db)
-- 10 SQL levels with 2 variants per level in [challenges.json](/home/roee/week_1/task_4/challenges.json)
-- story seeds in [crime_stories.json](/home/roee/week_1/task_4/crime_stories.json)
+- a real SQLite database in [data/detective.db](/home/roee/week_1/task_4/data/detective.db)
+- 10 SQL levels with 2 variants per level in [data/challenges.json](/home/roee/week_1/task_4/data/challenges.json)
+- story seeds in [data/crime_stories.json](/home/roee/week_1/task_4/data/crime_stories.json)
 - score, streak, hint, badge, and leaderboard systems
 - a desktop case-board UI with a SQL editor and live result previews
 
@@ -96,9 +96,9 @@ Each run selects one challenge variant per level, which reduces repetition while
 
 Startup flow:
 
-1. Load the challenge bank from [challenges.json](/home/roee/week_1/task_4/challenges.json).
+1. Load the challenge bank from [data/challenges.json](/home/roee/week_1/task_4/data/challenges.json).
 2. Group challenges by level and pick one variant per level for the run.
-3. Load one story seed from [crime_stories.json](/home/roee/week_1/task_4/crime_stories.json).
+3. Load one story seed from [data/crime_stories.json](/home/roee/week_1/task_4/data/crime_stories.json).
 4. Resolve resource and save-data paths through [app_paths.py](/home/roee/week_1/task_4/app_paths.py).
 5. Start the `pygame` case board and track score, streaks, hints, timing, and leaderboard state.
 
@@ -165,7 +165,7 @@ What gets bundled:
 - the game code
 - the SQLite database
 - challenge and story JSON files
-- the four portrait assets
+- the four portrait assets under `assets/images/`
 
 Save data:
 

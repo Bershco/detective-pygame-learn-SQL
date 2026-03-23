@@ -5,13 +5,13 @@ from pathlib import Path
 
 project_root = Path(SPECPATH)
 data_files = [
-    (str(project_root / "challenges.json"), "."),
-    (str(project_root / "crime_stories.json"), "."),
-    (str(project_root / "detective.db"), "."),
-    (str(project_root / "animal_detective_1.png"), "."),
-    (str(project_root / "animal_detective_2.png"), "."),
-    (str(project_root / "animal_detective_3.png"), "."),
-    (str(project_root / "animal_detective_4.png"), "."),
+    (str(project_root / "data" / "challenges.json"), "data"),
+    (str(project_root / "data" / "crime_stories.json"), "data"),
+    (str(project_root / "data" / "detective.db"), "data"),
+    (str(project_root / "assets" / "images" / "animal_detective_1.png"), "assets/images"),
+    (str(project_root / "assets" / "images" / "animal_detective_2.png"), "assets/images"),
+    (str(project_root / "assets" / "images" / "animal_detective_3.png"), "assets/images"),
+    (str(project_root / "assets" / "images" / "animal_detective_4.png"), "assets/images"),
 ]
 
 

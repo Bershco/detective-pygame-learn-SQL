@@ -24,6 +24,7 @@ dist/
 
 # Local runtime data
 leaderboard.json
+task4_my_own_words.txt
 
 # OS/editor noise
 .DS_Store

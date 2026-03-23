@@ -4,7 +4,7 @@ import sqlite3
 from app_paths import resource_path
 
 
-DB_PATH = resource_path("detective.db")
+DB_PATH = resource_path("data/detective.db")
 FORBIDDEN_KEYWORDS = ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE")
 
 
