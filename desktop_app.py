@@ -296,6 +296,8 @@ class DetectiveDesktopApp:
                 "attempts": 0,
                 "hint_count": 0,
                 "hint_index": -1,
+                "hint_history": [],
+                "hint_history_index": -1,
                 "hint_used": False,
                 "is_perfect_candidate": True,
                 "started_at": None,
@@ -491,12 +493,18 @@ class DetectiveDesktopApp:
         run_rect = pygame.Rect(920, 480, 154, 42)
         hint_rect = pygame.Rect(1085, 480, 154, 42)
         new_game_rect = pygame.Rect(1250, 480, 154, 42)
+        hint_prev_rect = pygame.Rect(1326, 543, 28, 24)
+        hint_next_rect = pygame.Rect(1360, 543, 28, 24)
         if run_rect.collidepoint(pos):
             self.run_query()
         elif hint_rect.collidepoint(pos):
             self.request_hint()
         elif new_game_rect.collidepoint(pos):
             self._request_new_game()
+        elif hint_prev_rect.collidepoint(pos):
+            self._scroll_hint_history(-1)
+        elif hint_next_rect.collidepoint(pos):
+            self._scroll_hint_history(1)
 
     def run_query(self):
         challenge = self.get_challenge()
@@ -618,10 +626,12 @@ class DetectiveDesktopApp:
         state["is_perfect_candidate"] = False
 
         if state["hint_count"] >= 42:
+            unlocked_text = f"Answer unlocked after 42 hints:\n{challenge['expected_query']}"
+            self._store_hint(state, unlocked_text)
             self._set_feedback(
                 challenge_id,
                 "success",
-                f"Answer unlocked after 42 hints:\n{challenge['expected_query']}",
+                unlocked_text,
                 reveal_query=True,
             )
             return
@@ -629,16 +639,56 @@ class DetectiveDesktopApp:
         if state["hint_count"] in REVEAL_THRESHOLDS:
             reveal_index = REVEAL_THRESHOLDS[state["hint_count"]]
             reveal_hint = challenge["reveal_hints"][reveal_index]
+            stored_hint = f"Deeper clue {state['hint_count']}: {reveal_hint}"
+            self._store_hint(state, stored_hint)
             self._set_feedback(
                 challenge_id,
                 "warning",
-                f"Deeper clue {state['hint_count']}: {reveal_hint}",
+                stored_hint,
             )
             return
 
         state["hint_index"] = min(state["hint_index"] + 1, len(challenge["hints"]) - 1)
         hint = challenge["hints"][state["hint_index"]]
-        self._set_feedback(challenge_id, "warning", f"Hint: {hint}")
+        stored_hint = f"Hint: {hint}"
+        self._store_hint(state, stored_hint)
+        self._set_feedback(challenge_id, "warning", stored_hint)
+
+    def _store_hint(self, state: dict, hint_text: str):
+        if hint_text in state["hint_history"]:
+            state["hint_history_index"] = state["hint_history"].index(hint_text)
+            return
+        state["hint_history"].append(hint_text)
+        state["hint_history_index"] = len(state["hint_history"]) - 1
+
+    def _scroll_hint_history(self, direction: int):
+        challenge = self.get_challenge()
+        state = self.current_state()
+        if not state["hint_history"]:
+            return
+        state["hint_history_index"] = (
+            state["hint_history_index"] + direction
+        ) % len(state["hint_history"])
+        hint_text, _, _ = self._current_hint_history_entry()
+        if hint_text is None:
+            return
+        is_answer_unlock = hint_text.startswith("Answer unlocked after 42 hints:")
+        self._set_feedback(
+            challenge["id"],
+            "success" if is_answer_unlock else "warning",
+            hint_text,
+            reveal_query=is_answer_unlock,
+        )
+
+    def _current_hint_history_entry(self):
+        state = self.current_state()
+        if not state["hint_history"]:
+            return None, 0, 0
+        index = state["hint_history_index"]
+        if index < 0:
+            index = len(state["hint_history"]) - 1
+            state["hint_history_index"] = index
+        return state["hint_history"][index], index + 1, len(state["hint_history"])
 
     def leaderboard_rows(self) -> list[dict]:
         ordered = sorted(
@@ -783,8 +833,22 @@ class DetectiveDesktopApp:
             bubble_color=bubble_color,
             allow_query_reveal=feedback["reveal_query"],
         )
+        self._draw_feedback_hint_controls()
         self._draw_badges_box(pygame.Rect(920, 678, 480, 74))
         self._draw_leaderboard_box(pygame.Rect(920, 760, 480, 124))
+
+    def _draw_feedback_hint_controls(self):
+        hint_text, current_index, total = self._current_hint_history_entry()
+        if not hint_text:
+            return
+        Button((1326, 543, 28, 24), "<", lambda: None, TITLE).draw(
+            self.screen, self.small_font
+        )
+        Button((1360, 543, 28, 24), ">", lambda: None, TITLE).draw(
+            self.screen, self.small_font
+        )
+        counter = self.tiny_font.render(f"{current_index}/{total}", True, MUTED)
+        self.screen.blit(counter, (1292, 548))
 
     def _draw_badges_box(self, rect):
         draw_rounded_rect(self.screen, CARD, rect, radius=16, border=2, border_color=ACCENT)
