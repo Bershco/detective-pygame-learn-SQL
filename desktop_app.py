@@ -43,7 +43,7 @@ POST_ANSWER_EASTER_EGGS = {
 }
 
 WINDOW_WIDTH = 1450
-WINDOW_HEIGHT = 930
+WINDOW_HEIGHT = 900
 FPS = 60
 
 BG = (224, 205, 168)
@@ -468,7 +468,7 @@ class DetectiveDesktopApp:
         self.leaderboard_entries = load_json(LEADERBOARD_PATH, [])
         self.character_images = self._load_character_images()
 
-        self.editor = TextInput((920, 180, 485, 160))
+        self.editor = TextInput((920, 148, 485, 192))
         self.level_buttons: list[Button] = []
         self.preview_tabs: list[Button] = []
         self.current_preview_columns: list[str] = []
@@ -563,7 +563,7 @@ class DetectiveDesktopApp:
         width = 46
         gap = 4
         for level in range(1, 11):
-            rect = (start_x + (level - 1) * (width + gap), 92, width, 38)
+            rect = (start_x + (level - 1) * (width + gap), 74, width, 38)
             self.level_buttons.append(
                 Button(rect, str(level), lambda selected=level: self.open_level(selected), GOLD)
             )
@@ -579,10 +579,10 @@ class DetectiveDesktopApp:
         self.active_preview_index = 0
         if len(challenge["tables"]) > 1:
             self.preview_tabs.append(
-                Button((50, 540, 40, 34), "<", lambda: self._cycle_preview(-1), TITLE)
+                Button((768, 480, 40, 34), "<", lambda: self._cycle_preview(-1), TITLE)
             )
             self.preview_tabs.append(
-                Button((96, 540, 40, 34), ">", lambda: self._cycle_preview(1), TITLE)
+                Button((814, 480, 40, 34), ">", lambda: self._cycle_preview(1), TITLE)
             )
         self._set_preview(0)
 
@@ -1020,17 +1020,17 @@ class DetectiveDesktopApp:
                 x += separator.get_width() + 18
 
     def _draw_left_panel(self):
-        draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 750), radius=18)
+        draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 720), radius=18)
         challenge = self.get_challenge()
         case_title = challenge["title"].split(": ", 1)[-1]
         self._draw_avatar_bubble(
-            pygame.Rect(50, 170, 810, 182),
+            pygame.Rect(50, 170, 810, 164),
             "Lead Detective Mara Voss",
             f"{case_title}\n{challenge['story']}",
             bubble_color=CARD,
         )
         self._draw_avatar_bubble(
-            pygame.Rect(50, 364, 810, 86),
+            pygame.Rect(50, 346, 810, 84),
             "Analyst Theo",
             f"{challenge['description']}\n\nFocus: {challenge['concept']}",
             bubble_color=(254, 243, 217),
@@ -1039,21 +1039,21 @@ class DetectiveDesktopApp:
             tab.draw(self.screen, self.small_font)
         preview_title = f"{challenge['tables'][self.active_preview_index]} preview"
         self._draw_table_box(
-            pygame.Rect(50, 520, 810, 126),
+            pygame.Rect(50, 470, 810, 136),
             preview_title,
             self.current_preview_columns,
             self.current_preview_rows,
         )
         result = self.last_results.get(challenge["id"], {"columns": [], "rows": []})
         self._draw_table_box(
-            pygame.Rect(50, 658, 810, 192),
+            pygame.Rect(50, 620, 810, 192),
             "Query Result",
             result["columns"],
             result["rows"],
         )
 
     def _draw_right_panel(self):
-        draw_rounded_rect(self.screen, PANEL, pygame.Rect(900, 24, 520, 876), radius=18)
+        draw_rounded_rect(self.screen, PANEL, pygame.Rect(900, 24, 520, 840), radius=18)
         header = self.header_font.render("Case Files", True, DARK)
         self.screen.blit(header, (920, 34))
 
@@ -1065,7 +1065,7 @@ class DetectiveDesktopApp:
             button.draw(self.screen, self.small_font)
 
         editor_label = self.header_font.render("SQL Editor", True, DARK)
-        self.screen.blit(editor_label, (920, 122))
+        self.screen.blit(editor_label, (920, 118))
         self.editor.draw(self.screen, self.mono_font)
 
         Button((920, 354, 154, 42), "Run Query", lambda: None, SUCCESS).draw(
@@ -1108,7 +1108,7 @@ class DetectiveDesktopApp:
         )
         self._draw_feedback_hint_controls()
         self._draw_badges_box(pygame.Rect(920, 596, 480, 74))
-        self._draw_leaderboard_box(pygame.Rect(920, 678, 480, 96))
+        self._draw_leaderboard_box(pygame.Rect(920, 662, 480, 96))
 
     def _draw_warmup_status_box(self, rect):
         state = self.current_state()
