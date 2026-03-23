@@ -1,0 +1,182 @@
+[
+  {
+    "story_id": "blackwood_gala",
+    "case_name": "Blackwood Gala Murder",
+    "victim": "Elias Blackwood",
+    "scene": "the Ashford Museum gala",
+    "opening": "Elias Blackwood was killed after a private gala at the Ashford Museum, and the academy has been asked to support the investigation",
+    "motive": "a stolen ledger",
+    "stolen_item": "the missing ledger pages"
+  },
+  {
+    "story_id": "marrow_harbor",
+    "case_name": "Marrow Harbor Homicide",
+    "victim": "Lucia Marrow",
+    "scene": "the Kingsport harbor auction",
+    "opening": "Lucia Marrow was found dead hours after a closed-door auction at Kingsport harbor, and the academy has been pulled into the case",
+    "motive": "a smuggling payout",
+    "stolen_item": "the disputed shipping manifest"
+  },
+  {
+    "story_id": "thorne_estate",
+    "case_name": "Thorne Estate Killing",
+    "victim": "Gideon Thorne",
+    "scene": "the Riverton estate fundraiser",
+    "opening": "Gideon Thorne was murdered during a late-night fundraiser at his Riverton estate, and the academy has been called in to sort the leads",
+    "motive": "a hidden inheritance trail",
+    "stolen_item": "the sealed inheritance file"
+  },
+  {
+    "story_id": "vale_studio",
+    "case_name": "Vale Studio Death",
+    "victim": "Nadia Vale",
+    "scene": "a private recording session in Fairview",
+    "opening": "Nadia Vale died under suspicious circumstances after a private recording session in Fairview, and the academy is now helping untangle the timeline",
+    "motive": "an extortion payment",
+    "stolen_item": "the blackmail recordings"
+  },
+  {
+    "story_id": "holloway_depot",
+    "case_name": "Holloway Depot Murder",
+    "victim": "Jonah Holloway",
+    "scene": "the Stonebridge rail depot inspection",
+    "opening": "Jonah Holloway was killed after a midnight inspection at the Stonebridge rail depot, and the academy has been assigned to review the evidence",
+    "motive": "a routing fraud scheme",
+    "stolen_item": "the altered cargo schedule"
+  },
+  {
+    "story_id": "sable_club",
+    "case_name": "Sable Club Killing",
+    "victim": "Mina Sable",
+    "scene": "the Redwater nightclub opening",
+    "opening": "Mina Sable was murdered after a crowded nightclub opening in Redwater, and the academy has been tasked with finding a reliable suspect trail",
+    "motive": "a payoff dispute",
+    "stolen_item": "the hidden cash ledger"
+  },
+  {
+    "story_id": "cormac_warehouse",
+    "case_name": "Cormac Warehouse Case",
+    "victim": "Theo Cormac",
+    "scene": "a sealed warehouse inspection in Brookhaven",
+    "opening": "Theo Cormac never left a sealed warehouse inspection in Brookhaven alive, and the academy has stepped in to reconstruct what happened",
+    "motive": "a stolen inventory list",
+    "stolen_item": "the warehouse keybook"
+  },
+  {
+    "story_id": "frost_archive",
+    "case_name": "Frost Archive Death",
+    "victim": "Elena Frost",
+    "scene": "the Oakridge archive donor event",
+    "opening": "Elena Frost was killed after a donor event at the Oakridge archives, and the academy now has to trace the movement around that night",
+    "motive": "a forged document exchange",
+    "stolen_item": "the donor contract bundle"
+  },
+  {
+    "story_id": "drake_gallery",
+    "case_name": "Drake Gallery Murder",
+    "victim": "Simon Drake",
+    "scene": "an after-hours gallery preview in Ashford",
+    "opening": "Simon Drake was murdered after an after-hours gallery preview in Ashford, and the academy has been asked to pressure-test the suspect list",
+    "motive": "a counterfeit art sale",
+    "stolen_item": "the forged provenance file"
+  },
+  {
+    "story_id": "quinlan_forum",
+    "case_name": "Quinlan Forum Homicide",
+    "victim": "Priya Quinlan",
+    "scene": "a technology forum in Fairview",
+    "opening": "Priya Quinlan died after a private technology forum in Fairview, and the academy has to connect the digital and physical leads",
+    "motive": "a data theft payment",
+    "stolen_item": "the prototype access codes"
+  },
+  {
+    "story_id": "barrow_lodge",
+    "case_name": "Barrow Lodge Murder",
+    "victim": "Hugo Barrow",
+    "scene": "a hunting lodge retreat near Riverton",
+    "opening": "Hugo Barrow was found dead after a remote lodge retreat near Riverton, and the academy has been asked to sort out the conflicting witness reports",
+    "motive": "an insurance fraud plan",
+    "stolen_item": "the policy amendment"
+  },
+  {
+    "story_id": "mercer_hotel",
+    "case_name": "Mercer Hotel Killing",
+    "victim": "Alina Mercer",
+    "scene": "the Stonebridge Grand Hotel reception",
+    "opening": "Alina Mercer was killed after an exclusive reception at the Stonebridge Grand Hotel, and the academy has been brought in to read the trail cleanly",
+    "motive": "a bribery network",
+    "stolen_item": "the room ledger"
+  },
+  {
+    "story_id": "reed_observatory",
+    "case_name": "Reed Observatory Death",
+    "victim": "Calvin Reed",
+    "scene": "an observatory fundraiser in Oakridge",
+    "opening": "Calvin Reed died after a private observatory fundraiser in Oakridge, and the academy must turn scattered clues into a working theory",
+    "motive": "a grant embezzlement trail",
+    "stolen_item": "the telescope grant file"
+  },
+  {
+    "story_id": "pike_terminal",
+    "case_name": "Pike Terminal Murder",
+    "victim": "Rosa Pike",
+    "scene": "the Brookhaven freight terminal briefing",
+    "opening": "Rosa Pike was murdered after a freight terminal briefing in Brookhaven, and the academy has been told to identify the strongest lead fast",
+    "motive": "a cargo diversion scheme",
+    "stolen_item": "the rerouting schedule"
+  },
+  {
+    "story_id": "sloan_orchard",
+    "case_name": "Sloan Orchard Case",
+    "victim": "Marcus Sloan",
+    "scene": "a private meeting at the Fairview orchard house",
+    "opening": "Marcus Sloan was killed after a secret meeting at the Fairview orchard house, and the academy now has to work through a growing suspect board",
+    "motive": "a land fraud payoff",
+    "stolen_item": "the title deed packet"
+  },
+  {
+    "story_id": "mills_theater",
+    "case_name": "Mills Theater Murder",
+    "victim": "Tessa Mills",
+    "scene": "the opening night rehearsal in Kingsport",
+    "opening": "Tessa Mills was found dead after an opening night rehearsal in Kingsport, and the academy has been asked to move from rumor to evidence",
+    "motive": "a sabotage payment",
+    "stolen_item": "the rehearsal notebook"
+  },
+  {
+    "story_id": "hart_foundry",
+    "case_name": "Hart Foundry Homicide",
+    "victim": "Dorian Hart",
+    "scene": "the Redwater foundry inspection",
+    "opening": "Dorian Hart was murdered after a Redwater foundry inspection, and the academy has stepped in to connect the facility records to the suspect pool",
+    "motive": "an illegal metals contract",
+    "stolen_item": "the contract register"
+  },
+  {
+    "story_id": "bennett_mansion",
+    "case_name": "Bennett Mansion Death",
+    "victim": "Clara Bennett",
+    "scene": "a charity auction at the Brookhaven mansion",
+    "opening": "Clara Bennett died after a charity auction at a Brookhaven mansion, and the academy must turn a social event into a solvable investigation",
+    "motive": "a debt payoff trail",
+    "stolen_item": "the auction pledge book"
+  },
+  {
+    "story_id": "shaw_marina",
+    "case_name": "Shaw Marina Murder",
+    "victim": "Victor Shaw",
+    "scene": "the Kingsport marina investors dinner",
+    "opening": "Victor Shaw was killed after an investors dinner at the Kingsport marina, and the academy is now responsible for building a coherent suspect path",
+    "motive": "a laundering operation",
+    "stolen_item": "the account notebook"
+  },
+  {
+    "story_id": "price_courthouse",
+    "case_name": "Price Courthouse Killing",
+    "victim": "Naomi Price",
+    "scene": "a sealed courthouse records review in Riverton",
+    "opening": "Naomi Price was murdered after a sealed records review in Riverton, and the academy has been drawn in to work the database angle of the case",
+    "motive": "a records tampering scheme",
+    "stolen_item": "the sealed witness folder"
+  }
+]

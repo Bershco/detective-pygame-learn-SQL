@@ -1,0 +1,92 @@
+[
+  {
+    "id": "level_1_first_five_suspects",
+    "level": 1,
+    "title": "Case 1: The Blackwood File",
+    "concept": "SELECT * and LIMIT",
+    "story_template": "{opening}. Before the senior detectives hand you the full registry, they want you to pull a small sample of suspects tied to the case file.",
+    "description": "Show the first 5 suspects from the suspects table.",
+    "tables": ["suspects"],
+    "expected_query": "SELECT * FROM suspects LIMIT 5;",
+    "order_matters": true,
+    "hints": [
+      "This case is only about reading data, not filtering it.",
+      "Use SELECT * to return every column, then keep the result small with LIMIT.",
+      "LIMIT controls how many rows SQLite returns. You need only 5 rows."
+    ],
+    "success_explanation": "You inspected a manageable slice of the registry by returning all columns but limiting the result to five rows.",
+    "case_update_template": "The first five records give the academy a starting pool of names, ages, cities, and occupations. One pattern stands out immediately: Riverton appears more than once, and the detectives decide that city deserves the next look in the {case_name} investigation."
+  },
+  {
+    "id": "level_2_riverton_suspects",
+    "level": 2,
+    "title": "Case 2: The Riverton Lead",
+    "concept": "WHERE",
+    "story_template": "Witnesses say someone connected to {victim} fled toward Riverton before dawn after the trouble at {scene}. The lead detective wants a clean briefing sheet that lists only the people in the suspect registry tied to that city.",
+    "description": "Find the names and cities of all suspects located in Riverton.",
+    "tables": ["suspects"],
+    "expected_query": "SELECT name, city FROM suspects WHERE city = 'Riverton';",
+    "order_matters": false,
+    "hints": [
+      "The answer should return only two columns: name and city.",
+      "Use WHERE to keep only rows where the city matches Riverton.",
+      "A WHERE clause filters rows. Keep the selected columns narrow so the result matches the briefing request."
+    ],
+    "success_explanation": "You filtered the registry to one city and returned only the fields the briefing asked for.",
+    "case_update_template": "The Riverton list is shorter than the full registry, which sharpens the case. A follow-up sweep around {scene} suggests the killer or an accomplice may have returned to a secured location after {victim}'s death."
+  },
+  {
+    "id": "level_3_latest_access_log",
+    "level": 3,
+    "title": "Case 3: Midnight Entry",
+    "concept": "ORDER BY and LIMIT",
+    "story_template": "Investigators recovered access logs from a nearby secure site linked to {scene}. To rebuild the timeline after {victim}'s death, the academy wants the single most recent entry from that log.",
+    "description": "Show the suspect_id, location_id, access_date, and access_time for the most recent access log entry.",
+    "tables": ["access_logs"],
+    "expected_query": "SELECT suspect_id, location_id, access_date, access_time FROM access_logs ORDER BY access_date DESC, access_time DESC LIMIT 1;",
+    "order_matters": true,
+    "hints": [
+      "Return exactly four columns: suspect_id, location_id, access_date, and access_time.",
+      "Use ORDER BY to sort from newest to oldest, then keep one row with LIMIT.",
+      "DESC means descending order, so larger or later values appear first. That helps you bring the newest date and time to the top."
+    ],
+    "success_explanation": "You ranked the logs by recency and isolated the newest entry for the investigation timeline.",
+    "case_update_template": "The newest access record places a suspect near a protected site after the crime window. That pushes the academy toward a financial motive tied to {motive}, so the next step is to find who has the heaviest transaction activity."
+  },
+  {
+    "id": "level_4_transactions_by_suspect",
+    "level": 4,
+    "title": "Case 4: Money Trail",
+    "concept": "GROUP BY and aggregations",
+    "story_template": "A forensic accountant finds a cluster of suspicious transfers around the night of the crime at {scene}. Before anyone starts naming names, the academy wants a simple summary that shows which suspect_id appears most often in the bank transactions table.",
+    "description": "Show the suspect_id and transaction count for the suspect with the highest number of bank transactions.",
+    "tables": ["bank_transactions"],
+    "expected_query": "SELECT suspect_id, COUNT(*) AS transaction_count FROM bank_transactions GROUP BY suspect_id ORDER BY transaction_count DESC LIMIT 1;",
+    "order_matters": true,
+    "hints": [
+      "The result should have two columns: suspect_id and a transaction count.",
+      "Count how many transaction rows belong to each suspect_id, then rank those counts.",
+      "GROUP BY builds one group per suspect_id. DESC sorts the largest count first so LIMIT 1 can keep the top result."
+    ],
+    "success_explanation": "You grouped the transactions by suspect_id, counted the rows, and isolated the busiest financial trail.",
+    "case_update_template": "One suspect rises above the others in the money trail around {stolen_item}, but the chief still needs something tangible before making an arrest. The academy now turns to the evidence room to connect a person directly to a physical clue."
+  },
+  {
+    "id": "level_5_suspects_with_evidence",
+    "level": 5,
+    "title": "Case 5: Final Link",
+    "concept": "JOIN",
+    "story_template": "The final board is almost ready. To close the {case_name}, the academy must connect each physical evidence item to the suspect attached to it and present the result in a briefing-friendly form.",
+    "description": "Show the suspect name and evidence type for every suspect linked to an evidence item.",
+    "tables": ["suspects", "evidence_inventory"],
+    "expected_query": "SELECT s.name, e.evidence_type FROM suspects s JOIN evidence_inventory e ON s.suspect_id = e.linked_suspect_id;",
+    "order_matters": false,
+    "hints": [
+      "The result should contain two columns: the suspect name and the evidence type.",
+      "Use a JOIN because the name is in suspects and the evidence link is in evidence_inventory.",
+      "A JOIN connects rows from two tables through matching keys. Here, suspect_id is the link to look for."
+    ],
+    "success_explanation": "You combined two related tables so the academy could see people and evidence together in one result.",
+    "case_update_template": "The evidence wall finally locks the timeline, the money trail, and the physical clues into one coherent picture. The academy closes the {case_name}, names the culprit behind {victim}'s death, and your first investigation ends with the crime solved."
+  }
+]
