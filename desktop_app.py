@@ -298,6 +298,19 @@ class TextInput:
         visible_segments = wrapped_segments[
             self.scroll_line_offset:self.scroll_line_offset + visible_capacity
         ]
+        if len(wrapped_segments) > visible_capacity:
+            rail_rect = pygame.Rect(self.rect.right - 12, inner.y, 4, inner.height)
+            thumb_height = max(
+                18,
+                int(inner.height * (visible_capacity / len(wrapped_segments))),
+            )
+            max_thumb_offset = inner.height - thumb_height
+            thumb_offset = 0
+            if max_scroll > 0:
+                thumb_offset = int(max_thumb_offset * (self.scroll_line_offset / max_scroll))
+            thumb_rect = pygame.Rect(rail_rect.x, rail_rect.y + thumb_offset, 4, thumb_height)
+            draw_rounded_rect(screen, (219, 206, 184), rail_rect, radius=2)
+            draw_rounded_rect(screen, ACCENT, thumb_rect, radius=2)
         y = inner.y
         for segment_text, _, _ in visible_segments:
             rendered = font.render(segment_text, True, DARK)
