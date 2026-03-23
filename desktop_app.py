@@ -982,23 +982,15 @@ class DetectiveDesktopApp:
         pygame.display.flip()
 
     def _draw_header(self):
-        draw_rounded_rect(self.screen, TITLE, pygame.Rect(30, 24, 980, 108), radius=18)
-        draw_rounded_rect(
-            self.screen,
-            (239, 227, 206),
-            pygame.Rect(1035, 24, 385, 108),
-            radius=18,
-            border=2,
-            border_color=ACCENT,
-        )
+        draw_rounded_rect(self.screen, TITLE, pygame.Rect(30, 24, 720, 82), radius=18)
         title = self.title_font.render("SQL Detective Academy", True, WHITE)
-        self.screen.blit(title, (52, 42))
+        self.screen.blit(title, (52, 34))
         subtitle = self.small_font.render(
             f"Work the {self.story['case_name']} with the desktop case board and a live SQLite database.",
             True,
             WHITE,
         )
-        self.screen.blit(subtitle, (52, 84))
+        self.screen.blit(subtitle, (52, 68))
 
         challenge = self.get_challenge()
         state = self.level_states[challenge["id"]]
@@ -1012,15 +1004,20 @@ class DetectiveDesktopApp:
             f"Attempts: {state['attempts']}",
             f"Time: {format_duration(elapsed)}",
         ]
-        y = 38
-        for index, line in enumerate(progress_lines):
-            column_x = 1056 if index < 3 else 1228
-            row_y = y + (index % 3) * 22
-            label = self.small_font.render(line, True, DARK)
-            self.screen.blit(label, (column_x, row_y))
         if self.admin_mode:
-            admin_label = self.small_font.render("Administrator Mode", True, ERROR)
-            self.screen.blit(admin_label, (1056, 103))
+            progress_lines.append("Administrator mode")
+
+        row_y = 118
+        x = 36
+        for index, line in enumerate(progress_lines):
+            color = ERROR if line == "Administrator mode" else DARK
+            label = self.small_font.render(line, True, color)
+            self.screen.blit(label, (x, row_y))
+            x += label.get_width() + 18
+            if index < len(progress_lines) - 1:
+                separator = self.small_font.render("|", True, MUTED)
+                self.screen.blit(separator, (x, row_y))
+                x += separator.get_width() + 18
 
     def _draw_left_panel(self):
         draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 750), radius=18)
