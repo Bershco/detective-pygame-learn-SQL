@@ -145,13 +145,13 @@ class Button:
         )
         text_color = self.fg_color if not self.disabled else (90, 78, 70)
         label = font.render(self.text, True, text_color)
-        text_x = self.rect.centerx
         if self.icon:
             self._draw_icon(
-                screen, self.icon, self.rect.x + 10, self.rect.centery - 8, text_color
+                screen, self.icon, self.rect.x + 6, self.rect.centery - 8, text_color
             )
-            text_x += 6
-        label_rect = label.get_rect(center=(text_x, self.rect.centery))
+            label_rect = label.get_rect(center=(self.rect.x + 30, self.rect.centery))
+        else:
+            label_rect = label.get_rect(center=self.rect.center)
         screen.blit(label, label_rect)
 
     def handle_click(self, pos):
@@ -332,8 +332,8 @@ class DetectiveDesktopApp:
     def _build_level_buttons(self):
         self.level_buttons.clear()
         start_x = 920
-        width = 42
-        gap = 5
+        width = 46
+        gap = 4
         for level in range(1, 11):
             rect = (start_x + (level - 1) * (width + gap), 192, width, 38)
             self.level_buttons.append(
