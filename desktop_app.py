@@ -430,16 +430,17 @@ class DetectiveDesktopApp:
         self.modal = None
         self.modal_buttons = []
 
+    def _record_and_start_new_game(self):
+        self._record_game_if_needed()
+        self._start_new_game()
+
     def _request_new_game(self):
-        if not self.completed_levels:
-            self._start_new_game()
-            return
         self._show_confirm_modal(
             "New Game",
-            "Start a fresh case file and reset the current run? The leaderboard history will stay.",
+            "Start a fresh case file and log the current run to the leaderboard with its current score?",
             [
                 {"label": "Cancel", "action": self._close_modal, "color": MUTED},
-                {"label": "Start New", "action": self._start_new_game, "color": GOLD},
+                {"label": "Start New", "action": self._record_and_start_new_game, "color": GOLD},
             ],
         )
 
@@ -583,7 +584,7 @@ class DetectiveDesktopApp:
             ),
             [
                 {"label": "Close", "action": self._close_modal, "color": MUTED},
-                {"label": "New Game", "action": self._start_new_game, "color": GOLD},
+                {"label": "New Game", "action": self._record_and_start_new_game, "color": GOLD},
             ],
         )
 
