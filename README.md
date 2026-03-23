@@ -36,17 +36,10 @@ pip install -r requirements.txt
 python3 desktop_app.py
 ```
 
-If you use the local alias discussed during verification:
-
-```bash
-agentenv
-python3 desktop_app.py
-```
-
 Administrator mode for browsing levels without progression gating:
 
 ```bash
-python3 desktop_app.py --administator
+python3 desktop_app.py --admin
 ```
 
 ## Download And Install
