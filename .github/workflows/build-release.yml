@@ -1,0 +1,68 @@
+name: Build Desktop Release
+
+on:
+  push:
+    tags:
+      - "V*"
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            archive_name: SQLDetectiveAcademy-linux-x86_64.tar.gz
+            artifact_name: sql-detective-linux
+          - os: windows-latest
+            archive_name: SQLDetectiveAcademy-windows-x86_64.zip
+            artifact_name: sql-detective-windows
+          - os: macos-latest
+            archive_name: SQLDetectiveAcademy-macos-universal.tar.gz
+            artifact_name: sql-detective-macos
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-packaging.txt
+
+      - name: Build packaged desktop app
+        run: python build_release.py
+
+      - name: Archive build output
+        shell: pwsh
+        run: |
+          $source = "dist/SQLDetectiveAcademy"
+          $archive = "dist/${{ matrix.archive_name }}"
+          if ("${{ runner.os }}" -eq "Windows") {
+            if (Test-Path $archive) { Remove-Item $archive -Force }
+            Compress-Archive -Path "$source/*" -DestinationPath $archive
+          } else {
+            tar -czf $archive -C dist SQLDetectiveAcademy
+          }
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.archive_name }}
+
+      - name: Attach archive to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ matrix.archive_name }}

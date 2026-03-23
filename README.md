@@ -44,13 +44,15 @@ python3 desktop_app.py --admin
 
 ## Download And Install
 
-For players, the intended release flow is a packaged desktop build:
+This project supports packaged desktop releases, but a GitHub Release may not always be published yet.
 
-1. Download the archive for your operating system from the GitHub Release page.
-2. Extract the archive.
+If a release artifact exists on GitHub:
+
+1. Download the archive for your operating system from the Releases page.
+2. Extract it.
 3. Open the `SQLDetectiveAcademy` executable or app inside the extracted folder.
 
-If you are building the release yourself:
+If no release artifact has been uploaded yet, build it locally:
 
 ```bash
 pip install -r requirements-packaging.txt
@@ -173,11 +175,17 @@ Recommended release flow:
 3. Archive the `dist/SQLDetectiveAcademy/` output.
 4. Upload the archives to a GitHub Release.
 
+Automation:
+
+- [`.github/workflows/build-release.yml`](/home/roee/week_1/task_4/.github/workflows/build-release.yml) builds release archives on Linux, Windows, and macOS when a tag such as `V1` is pushed
+- [release_v1_notes.txt](/home/roee/week_1/task_4/release_v1_notes.txt) contains a ready-to-paste title and body for the GitHub Release form
+
 Player install flow:
 
-1. Download the archive for the correct operating system from the GitHub Release page.
-2. Extract it.
-3. Open the `SQLDetectiveAcademy` executable or app inside the extracted folder.
+1. If a GitHub Release exists, download the archive for the correct operating system.
+2. If not, build the package locally with `python3 build_release.py`.
+3. Extract the archive or open the generated build folder.
+4. Open the `SQLDetectiveAcademy` executable or app inside it.
 
 ## Repository Notes
 

@@ -1,0 +1,26 @@
+Release title:
+V1 - SQL Detective Academy desktop release
+
+Release body:
+SQL Detective Academy is a desktop SQL learning game built with pygame and backed by a real SQLite database.
+
+What is included:
+- 10 SQL levels with story-driven detective cases
+- real query validation against SQLite
+- score, streak, badge, hint, and leaderboard systems
+- administrator mode for browsing levels with --administator
+
+Files in this release:
+- Linux: SQLDetectiveAcademy-linux-x86_64.tar.gz
+- Windows: SQLDetectiveAcademy-windows-x86_64.zip
+- macOS: SQLDetectiveAcademy-macos-universal.tar.gz
+
+Install:
+1. Download the archive for your operating system.
+2. Extract it.
+3. Open the SQLDetectiveAcademy executable or app inside the extracted folder.
+
+Notes:
+- Save data is stored in the user application data directory, not inside the install folder.
+- Linux builds were verified locally in this project workspace.
+- Windows and macOS artifacts are intended to be produced through the GitHub Actions release workflow on tags.
