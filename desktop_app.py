@@ -194,8 +194,11 @@ class TextInput:
         self.wrap_width = 0
         self.scrollbar_rail_rect = None
         self.scrollbar_thumb_rect = None
+        self.scrollbar_hitbox_rect = None
+        self.scrollbar_thumb_hitbox_rect = None
         self.dragging_scrollbar = False
         self.scroll_drag_offset = 0
+        self.follow_cursor = True
         self.active = False
         self.cursor_visible = True
         self.cursor_timer = 0
@@ -204,12 +207,14 @@ class TextInput:
         self.text = text
         self.cursor_position = len(text)
         self.scroll_line_offset = 0
+        self.follow_cursor = True
 
     def _insert_text(self, inserted_text: str):
         self.text = (
             f"{self.text[:self.cursor_position]}{inserted_text}{self.text[self.cursor_position:]}"
         )
         self.cursor_position += len(inserted_text)
+        self.follow_cursor = True
 
     def _cursor_segment_index(self, wrapped_segments: list[tuple[str, int, int]]) -> int:
         cursor_segment_index = 0
@@ -241,6 +246,7 @@ class TextInput:
         self.cursor_position = target_start + target_column
         if target_text == "" and target_end == target_start:
             self.cursor_position = target_start
+        self.follow_cursor = True
 
     def _wrapped_segments(self, font, max_width: int) -> list[tuple[str, int, int]]:
         if not self.text:
@@ -309,10 +315,11 @@ class TextInput:
         cursor_segment_index = self._cursor_segment_index(wrapped_segments)
 
         max_scroll = max(0, len(wrapped_segments) - visible_capacity)
-        if cursor_segment_index < self.scroll_line_offset:
-            self.scroll_line_offset = cursor_segment_index
-        elif cursor_segment_index >= self.scroll_line_offset + visible_capacity:
-            self.scroll_line_offset = cursor_segment_index - visible_capacity + 1
+        if self.follow_cursor:
+            if cursor_segment_index < self.scroll_line_offset:
+                self.scroll_line_offset = cursor_segment_index
+            elif cursor_segment_index >= self.scroll_line_offset + visible_capacity:
+                self.scroll_line_offset = cursor_segment_index - visible_capacity + 1
         self.scroll_line_offset = max(0, min(self.scroll_line_offset, max_scroll))
 
         visible_segments = wrapped_segments[
@@ -331,11 +338,20 @@ class TextInput:
             thumb_rect = pygame.Rect(rail_rect.x, rail_rect.y + thumb_offset, 4, thumb_height)
             self.scrollbar_rail_rect = rail_rect
             self.scrollbar_thumb_rect = thumb_rect
+            self.scrollbar_hitbox_rect = pygame.Rect(rail_rect.x - 6, rail_rect.y, 16, rail_rect.height)
+            self.scrollbar_thumb_hitbox_rect = pygame.Rect(
+                thumb_rect.x - 6,
+                thumb_rect.y,
+                16,
+                thumb_rect.height,
+            )
             draw_rounded_rect(screen, (219, 206, 184), rail_rect, radius=2)
             draw_rounded_rect(screen, ACCENT, thumb_rect, radius=2)
         else:
             self.scrollbar_rail_rect = None
             self.scrollbar_thumb_rect = None
+            self.scrollbar_hitbox_rect = None
+            self.scrollbar_thumb_hitbox_rect = None
         y = inner.y
         for segment_text, _, _ in visible_segments:
             rendered = font.render(segment_text, True, DARK)
@@ -369,18 +385,21 @@ class TextInput:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.scrollbar_thumb_rect and self.scrollbar_thumb_rect.collidepoint(event.pos):
+            if self.scrollbar_thumb_hitbox_rect and self.scrollbar_thumb_hitbox_rect.collidepoint(event.pos):
                 self.dragging_scrollbar = True
                 self.scroll_drag_offset = event.pos[1] - self.scrollbar_thumb_rect.y
                 self.active = True
+                self.follow_cursor = False
                 return
-            if self.scrollbar_rail_rect and self.scrollbar_rail_rect.collidepoint(event.pos):
+            if self.scrollbar_hitbox_rect and self.scrollbar_hitbox_rect.collidepoint(event.pos):
                 self.dragging_scrollbar = True
                 self.scroll_drag_offset = self.scrollbar_thumb_rect.height // 2 if self.scrollbar_thumb_rect else 0
                 self._update_scroll_from_thumb(event.pos[1])
                 self.active = True
+                self.follow_cursor = False
                 return
             self.active = self.rect.collidepoint(event.pos)
+            self.follow_cursor = self.active
             return
 
         if event.type == pygame.MOUSEBUTTONUP:
@@ -397,6 +416,7 @@ class TextInput:
                 0,
                 min(max_scroll, self.scroll_line_offset - event.y),
             )
+            self.follow_cursor = False
             return
 
         if event.type != pygame.KEYDOWN or not self.active:
@@ -408,14 +428,17 @@ class TextInput:
                     f"{self.text[:self.cursor_position - 1]}{self.text[self.cursor_position:]}"
                 )
                 self.cursor_position -= 1
+                self.follow_cursor = True
         elif event.key == pygame.K_RETURN:
             self._insert_text("\n")
         elif event.key == pygame.K_TAB:
             self._insert_text("    ")
         elif event.key == pygame.K_LEFT:
             self.cursor_position = max(0, self.cursor_position - 1)
+            self.follow_cursor = True
         elif event.key == pygame.K_RIGHT:
             self.cursor_position = min(len(self.text), self.cursor_position + 1)
+            self.follow_cursor = True
         elif event.key == pygame.K_UP:
             self._move_vertical(-1)
         elif event.key == pygame.K_DOWN:
