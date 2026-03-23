@@ -189,6 +189,7 @@ class TextInput:
         self.rect = pygame.Rect(rect)
         self.text = ""
         self.cursor_position = 0
+        self.scroll_line_offset = 0
         self.active = False
         self.cursor_visible = True
         self.cursor_timer = 0
@@ -196,6 +197,7 @@ class TextInput:
     def set_text(self, text: str):
         self.text = text
         self.cursor_position = len(text)
+        self.scroll_line_offset = 0
 
     def _insert_text(self, inserted_text: str):
         self.text = (
@@ -234,28 +236,83 @@ class TextInput:
         target_column = min(column, current_line_end - line_starts[target_line])
         self.cursor_position = line_starts[target_line] + max(0, target_column)
 
+    def _wrapped_segments(self, font, max_width: int) -> list[tuple[str, int, int]]:
+        if not self.text:
+            return [("", 0, 0)]
+
+        segments: list[tuple[str, int, int]] = []
+        absolute_index = 0
+        for raw_line in self.text.split("\n"):
+            if raw_line == "":
+                segments.append(("", absolute_index, absolute_index))
+                absolute_index += 1
+                continue
+
+            slice_start = 0
+            while slice_start < len(raw_line):
+                slice_end = slice_start + 1
+                while (
+                    slice_end <= len(raw_line)
+                    and font.size(raw_line[slice_start:slice_end])[0] <= max_width
+                ):
+                    slice_end += 1
+                fitted_end = max(slice_start + 1, slice_end - 1)
+                segment_text = raw_line[slice_start:fitted_end]
+                segments.append(
+                    (
+                        segment_text,
+                        absolute_index + slice_start,
+                        absolute_index + fitted_end,
+                    )
+                )
+                slice_start = fitted_end
+            absolute_index += len(raw_line) + 1
+
+        return segments or [("", 0, 0)]
+
     def draw(self, screen, font):
         draw_rounded_rect(screen, CARD, self.rect, radius=14, border=2, border_color=ACCENT)
         inner = self.rect.inflate(-16, -16)
-        lines = self.text.split("\n") or [""]
-        cursor_line_index, _, line_starts = self._cursor_line_and_column()
-        visible_start = max(0, len(lines) - 12)
-        if cursor_line_index < visible_start:
-            visible_start = cursor_line_index
-        visible_lines = lines[visible_start:visible_start + 12]
-        y = inner.y
         line_height = font.get_height() + 4
-        for line in visible_lines:
-            rendered = font.render(line, True, DARK)
+        visible_capacity = max(1, inner.height // line_height)
+        wrapped_segments = self._wrapped_segments(font, inner.width - 4)
+
+        cursor_segment_index = 0
+        for idx, (_, segment_start, segment_end) in enumerate(wrapped_segments):
+            if segment_start <= self.cursor_position <= segment_end:
+                cursor_segment_index = idx
+                break
+            if (
+                idx == len(wrapped_segments) - 1
+                and self.cursor_position >= segment_end
+            ):
+                cursor_segment_index = idx
+
+        max_scroll = max(0, len(wrapped_segments) - visible_capacity)
+        if cursor_segment_index < self.scroll_line_offset:
+            self.scroll_line_offset = cursor_segment_index
+        elif cursor_segment_index >= self.scroll_line_offset + visible_capacity:
+            self.scroll_line_offset = cursor_segment_index - visible_capacity + 1
+        self.scroll_line_offset = max(0, min(self.scroll_line_offset, max_scroll))
+
+        visible_segments = wrapped_segments[
+            self.scroll_line_offset:self.scroll_line_offset + visible_capacity
+        ]
+        y = inner.y
+        for segment_text, _, _ in visible_segments:
+            rendered = font.render(segment_text, True, DARK)
             screen.blit(rendered, (inner.x, y))
             y += line_height
 
         if self.active and self.cursor_visible:
-            current_line = lines[cursor_line_index] if lines else ""
-            visible_cursor_line = cursor_line_index - visible_start
-            cursor_x = inner.x + font.size(current_line)[0] + 2
-            current_line_start = line_starts[cursor_line_index]
-            current_column = self.cursor_position - current_line_start
+            current_line, segment_start, segment_end = wrapped_segments[cursor_segment_index]
+            visible_cursor_line = cursor_segment_index - self.scroll_line_offset
+            current_column = min(
+                max(self.cursor_position - segment_start, 0),
+                len(current_line),
+            )
+            if self.cursor_position > segment_end:
+                current_column = len(current_line)
             cursor_x = inner.x + font.size(current_line[:current_column])[0] + 2
             cursor_y = inner.y + visible_cursor_line * line_height
             pygame.draw.line(
@@ -275,6 +332,10 @@ class TextInput:
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.active = self.rect.collidepoint(event.pos)
+            return
+
+        if event.type == pygame.MOUSEWHEEL and self.active:
+            self.scroll_line_offset = max(0, self.scroll_line_offset - event.y)
             return
 
         if event.type != pygame.KEYDOWN or not self.active:
@@ -322,7 +383,7 @@ class DetectiveDesktopApp:
         self.leaderboard_entries = load_json(LEADERBOARD_PATH, [])
         self.character_images = self._load_character_images()
 
-        self.editor = TextInput((920, 280, 485, 190))
+        self.editor = TextInput((920, 280, 485, 160))
         self.level_buttons: list[Button] = []
         self.preview_tabs: list[Button] = []
         self.current_preview_columns: list[str] = []
@@ -864,7 +925,6 @@ class DetectiveDesktopApp:
             f"Score: {self.score}",
             f"Streak: {self.current_streak}",
             f"Attempts: {state['attempts']}",
-            f"Warm-ups: {state['practice_queries_left']}",
             f"Time: {format_duration(elapsed)}",
         ]
         y = 38
@@ -935,6 +995,7 @@ class DetectiveDesktopApp:
         Button((1250, 480, 154, 42), "New Game", lambda: None, TITLE).draw(
             self.screen, self.body_font
         )
+        self._draw_warmup_status_box(pygame.Rect(920, 528, 480, 42))
 
         challenge = self.get_challenge()
         feedback = self.feedback_messages.get(
@@ -957,15 +1018,34 @@ class DetectiveDesktopApp:
             bubble_color = (245, 227, 227)
 
         self._draw_avatar_bubble(
-            pygame.Rect(920, 535, 480, 132),
+            pygame.Rect(920, 579, 480, 132),
             "Desk Sergeant Imani",
             feedback["text"],
             bubble_color=bubble_color,
             allow_query_reveal=feedback["reveal_query"],
         )
         self._draw_feedback_hint_controls()
-        self._draw_badges_box(pygame.Rect(920, 678, 480, 74))
-        self._draw_leaderboard_box(pygame.Rect(920, 760, 480, 124))
+        self._draw_badges_box(pygame.Rect(920, 722, 480, 74))
+        self._draw_leaderboard_box(pygame.Rect(920, 804, 480, 96))
+
+    def _draw_warmup_status_box(self, rect):
+        state = self.current_state()
+        warmups_left = state["practice_queries_left"]
+        bg_color = (242, 233, 210) if warmups_left > 0 else (242, 220, 220)
+        accent_color = SUCCESS if warmups_left > 0 else ERROR
+        draw_rounded_rect(self.screen, bg_color, rect, radius=14, border=2, border_color=ACCENT)
+        title = self.small_font.render("Warm-up queries", True, DARK)
+        count = self.header_font.render(str(warmups_left), True, accent_color)
+        status_text = (
+            "safe misses left"
+            if warmups_left > 0
+            else "buffer exhausted"
+        )
+        status = self.small_font.render(status_text, True, DARK)
+        center_y = rect.centery
+        self.screen.blit(title, (rect.x + 14, center_y - title.get_height() // 2))
+        self.screen.blit(count, (rect.x + 170, center_y - count.get_height() // 2 - 1))
+        self.screen.blit(status, (rect.x + 214, center_y - status.get_height() // 2))
 
     def _draw_feedback_hint_controls(self):
         hint_text, current_index, total = self._current_hint_history_entry()
