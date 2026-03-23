@@ -1,3 +1,4 @@
+import argparse
 import json
 import random
 import time
@@ -228,11 +229,12 @@ class TextInput:
 
 
 class DetectiveDesktopApp:
-    def __init__(self):
+    def __init__(self, admin_mode: bool = False):
         pygame.init()
         pygame.display.set_caption("SQL Detective Academy")
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.clock = pygame.time.Clock()
+        self.admin_mode = admin_mode
 
         self.title_font = pygame.font.SysFont("georgia", 28, bold=True)
         self.header_font = pygame.font.SysFont("georgia", 20, bold=True)
@@ -314,6 +316,8 @@ class DetectiveDesktopApp:
         return challenge
 
     def unlocked_level(self):
+        if self.admin_mode:
+            return len(self.selected_challenges)
         return min(len(self.selected_challenges), max(1, len(self.completed_levels) + 1))
 
     def current_state(self):
@@ -682,6 +686,9 @@ class DetectiveDesktopApp:
             row_y = y + (index % 3) * 22
             label = self.small_font.render(line, True, DARK)
             self.screen.blit(label, (column_x, row_y))
+        if self.admin_mode:
+            admin_label = self.small_font.render("Administrator Mode", True, ERROR)
+            self.screen.blit(admin_label, (1056, 103))
 
     def _draw_left_panel(self):
         draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 750), radius=18)
@@ -1028,8 +1035,19 @@ class DetectiveDesktopApp:
             self.modal_buttons.append((rect, button["action"]))
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--administator",
+        action="store_true",
+        help="Unlock all levels for inspection without normal progression gating.",
+    )
+    return parser.parse_args()
+
+
 def main():
-    DetectiveDesktopApp().run()
+    args = parse_args()
+    DetectiveDesktopApp(admin_mode=args.administator).run()
 
 
 if __name__ == "__main__":
