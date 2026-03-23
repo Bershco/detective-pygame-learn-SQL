@@ -1039,14 +1039,14 @@ class DetectiveDesktopApp:
             tab.draw(self.screen, self.small_font)
         preview_title = f"{challenge['tables'][self.active_preview_index]} preview"
         self._draw_table_box(
-            pygame.Rect(50, 470, 810, 136),
+            pygame.Rect(50, 500, 810, 136),
             preview_title,
             self.current_preview_columns,
             self.current_preview_rows,
         )
         result = self.last_results.get(challenge["id"], {"columns": [], "rows": []})
         self._draw_table_box(
-            pygame.Rect(50, 620, 810, 192),
+            pygame.Rect(50, 650, 810, 192),
             "Query Result",
             result["columns"],
             result["rows"],
@@ -1108,7 +1108,7 @@ class DetectiveDesktopApp:
         )
         self._draw_feedback_hint_controls()
         self._draw_badges_box(pygame.Rect(920, 596, 480, 74))
-        self._draw_leaderboard_box(pygame.Rect(920, 662, 480, 96))
+        self._draw_leaderboard_box(pygame.Rect(920, 676, 480, 176))
 
     def _draw_warmup_status_box(self, rect):
         state = self.current_state()
