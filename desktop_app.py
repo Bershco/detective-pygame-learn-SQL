@@ -735,15 +735,34 @@ class DetectiveDesktopApp:
         state["hint_index"] = min(state["hint_index"] + 1, len(challenge["hints"]) - 1)
         hint = challenge["hints"][state["hint_index"]]
         stored_hint = f"Hint: {hint}"
-        self._store_hint(state, stored_hint)
-        self._set_feedback(challenge_id, "warning", stored_hint)
-
-    def _store_hint(self, state: dict, hint_text: str):
-        if hint_text in state["hint_history"]:
-            state["hint_history_index"] = state["hint_history"].index(hint_text)
+        if self._store_hint(state, stored_hint):
+            self._set_feedback(challenge_id, "warning", stored_hint)
             return
+
+        latest_hint = self._latest_hint_text(state)
+        if latest_hint is None:
+            self._set_feedback(challenge_id, "warning", stored_hint)
+            return
+        is_answer_unlock = latest_hint.startswith("Answer unlocked after 42 hints:")
+        self._set_feedback(
+            challenge_id,
+            "success" if is_answer_unlock else "warning",
+            latest_hint,
+            reveal_query=is_answer_unlock,
+        )
+
+    def _store_hint(self, state: dict, hint_text: str) -> bool:
+        if hint_text in state["hint_history"]:
+            state["hint_history_index"] = len(state["hint_history"]) - 1
+            return False
         state["hint_history"].append(hint_text)
         state["hint_history_index"] = len(state["hint_history"]) - 1
+        return True
+
+    def _latest_hint_text(self, state: dict) -> str | None:
+        if not state["hint_history"]:
+            return None
+        return state["hint_history"][-1]
 
     def _scroll_hint_history(self, direction: int):
         challenge = self.get_challenge()
