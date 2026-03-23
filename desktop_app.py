@@ -27,6 +27,7 @@ CHARACTER_FILES = {
 }
 BADGE_MILESTONES = {3: "Bronze Streak", 5: "Silver Streak", 7: "Gold Streak"}
 REVEAL_THRESHOLDS = {10: 0, 20: 1, 30: 2, 40: 3}
+PRACTICE_QUERY_BUFFER = 2
 POST_ANSWER_EASTER_EGGS = {
     50: "I already gave the answer away. What more do you want?",
     55: "Seriously???",
@@ -372,6 +373,7 @@ class DetectiveDesktopApp:
         self.level_states = {
             challenge["id"]: {
                 "attempts": 0,
+                "practice_queries_left": PRACTICE_QUERY_BUFFER,
                 "hint_count": 0,
                 "hint_index": -1,
                 "hint_history": [],
@@ -613,10 +615,27 @@ class DetectiveDesktopApp:
             self._handle_success(challenge, state)
             return
 
+        if state["practice_queries_left"] > 0:
+            state["practice_queries_left"] -= 1
+            self._set_feedback(
+                challenge_id,
+                "warning",
+                (
+                    f"{result['message']}\n\n"
+                    f"Practice query used. Perfect status is still safe on this level. "
+                    f"Warm-up queries left: {state['practice_queries_left']}."
+                ),
+            )
+            return
+
         if state["is_perfect_candidate"]:
             self._break_streak()
         state["is_perfect_candidate"] = False
-        self._set_feedback(challenge_id, "warning", result["message"])
+        self._set_feedback(
+            challenge_id,
+            "warning",
+            f"{result['message']}\n\nWarm-up queries are exhausted for this level.",
+        )
 
     def _handle_success(self, challenge: dict, state: dict):
         challenge_id = challenge["id"]
@@ -845,6 +864,7 @@ class DetectiveDesktopApp:
             f"Score: {self.score}",
             f"Streak: {self.current_streak}",
             f"Attempts: {state['attempts']}",
+            f"Warm-ups: {state['practice_queries_left']}",
             f"Time: {format_duration(elapsed)}",
         ]
         y = 38
