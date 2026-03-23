@@ -1,5 +1,7 @@
 import json
 import random
+import time
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -15,15 +17,18 @@ from validation import execute_query, validate_query_result
 BASE_DIR = Path(__file__).parent
 CHALLENGES_PATH = BASE_DIR / "challenges.json"
 CRIME_STORIES_PATH = BASE_DIR / "crime_stories.json"
+LEADERBOARD_PATH = BASE_DIR / "leaderboard.json"
 CHARACTER_FILES = {
     "Lead Detective Mara Voss": BASE_DIR / "animal_detective_3.png",
     "Analyst Theo": BASE_DIR / "animal_detective_2.png",
     "Desk Sergeant Imani": BASE_DIR / "animal_detective_4.png",
     "Case Update": BASE_DIR / "animal_detective_1.png",
 }
+BADGE_MILESTONES = {3: "Bronze Streak", 5: "Silver Streak", 7: "Gold Streak"}
+REVEAL_THRESHOLDS = {10: 0, 20: 1, 30: 2, 40: 3}
 
 WINDOW_WIDTH = 1450
-WINDOW_HEIGHT = 900
+WINDOW_HEIGHT = 930
 FPS = 60
 
 BG = (224, 205, 168)
@@ -38,11 +43,21 @@ WARNING = (166, 112, 63)
 ERROR = (143, 71, 71)
 WHITE = (255, 255, 255)
 BLACK = (20, 14, 10)
+MUTED = (113, 97, 83)
+BRONZE = (167, 115, 72)
+SILVER = (126, 135, 148)
 
 
-def load_json(path: Path) -> list[dict]:
+def load_json(path: Path, default):
+    if not path.exists():
+        return default
     with path.open("r", encoding="utf-8") as file:
         return json.load(file)
+
+
+def save_json(path: Path, payload) -> None:
+    with path.open("w", encoding="utf-8") as file:
+        json.dump(payload, file, indent=2)
 
 
 def draw_rounded_rect(surface, color, rect, radius=16, border=0, border_color=None):
@@ -68,8 +83,52 @@ def wrap_text(text: str, font, max_width: int) -> list[str]:
     return lines
 
 
+def format_duration(seconds: int) -> str:
+    minutes, remaining = divmod(max(0, int(seconds)), 60)
+    return f"{minutes}:{remaining:02d}"
+
+
+def preview_table(table_name: str) -> tuple[list[str], list[tuple]]:
+    columns, rows, error = execute_query(
+        f"SELECT * FROM {table_name} ORDER BY RANDOM() LIMIT 2"
+    )
+    if error:
+        return ["error"], [(error,)]
+    return columns, rows
+
+
+def calculate_level_score(elapsed_seconds: int, attempts: int) -> int:
+    return max(25, 150 - elapsed_seconds - 15 * max(0, attempts - 1))
+
+
+def badge_bonus_for_streak(streak: int) -> int:
+    if streak == 3:
+        return 30
+    if streak == 5:
+        return 50
+    if streak == 7:
+        return 70
+    return 0
+
+
+def group_challenges_by_level(challenge_bank: list[dict]) -> dict[int, list[dict]]:
+    grouped: dict[int, list[dict]] = {}
+    for challenge in challenge_bank:
+        grouped.setdefault(challenge["level"], []).append(challenge)
+    return grouped
+
+
 class Button:
-    def __init__(self, rect, text, action, bg_color, fg_color=WHITE, disabled=False, icon=None):
+    def __init__(
+        self,
+        rect,
+        text,
+        action,
+        bg_color,
+        fg_color=WHITE,
+        disabled=False,
+        icon=None,
+    ):
         self.rect = pygame.Rect(rect)
         self.text = text
         self.action = action
@@ -80,13 +139,17 @@ class Button:
 
     def draw(self, screen, font):
         color = (153, 141, 126) if self.disabled else self.bg_color
-        draw_rounded_rect(screen, color, self.rect, radius=12, border=2, border_color=ACCENT)
+        draw_rounded_rect(
+            screen, color, self.rect, radius=12, border=2, border_color=ACCENT
+        )
         text_color = self.fg_color if not self.disabled else (90, 78, 70)
         label = font.render(self.text, True, text_color)
         text_x = self.rect.centerx
         if self.icon:
-            self._draw_icon(screen, self.icon, self.rect.x + 14, self.rect.centery - 8, text_color)
-            text_x += 8
+            self._draw_icon(
+                screen, self.icon, self.rect.x + 10, self.rect.centery - 8, text_color
+            )
+            text_x += 6
         label_rect = label.get_rect(center=(text_x, self.rect.centery))
         screen.blit(label, label_rect)
 
@@ -132,7 +195,13 @@ class TextInput:
             current_line = lines[-1] if lines else ""
             cursor_x = inner.x + font.size(current_line)[0] + 2
             cursor_y = inner.y + (len(lines[-12:]) - 1) * line_height
-            pygame.draw.line(screen, DARK, (cursor_x, cursor_y), (cursor_x, cursor_y + font.get_height()), 2)
+            pygame.draw.line(
+                screen,
+                DARK,
+                (cursor_x, cursor_y),
+                (cursor_x, cursor_y + font.get_height()),
+                2,
+            )
 
     def update(self, dt):
         self.cursor_timer += dt
@@ -167,33 +236,26 @@ class DetectiveDesktopApp:
 
         self.title_font = pygame.font.SysFont("georgia", 28, bold=True)
         self.header_font = pygame.font.SysFont("georgia", 20, bold=True)
-        self.body_font = pygame.font.SysFont("arial", 19)
-        self.small_font = pygame.font.SysFont("arial", 16)
-        self.mono_font = pygame.font.SysFont("couriernew", 18)
-        self.story_font = pygame.font.SysFont("arial", 17)
+        self.body_font = pygame.font.SysFont("arial", 18)
+        self.small_font = pygame.font.SysFont("arial", 15)
+        self.tiny_font = pygame.font.SysFont("arial", 13)
+        self.mono_font = pygame.font.SysFont("couriernew", 17)
 
-        self.challenges = load_json(CHALLENGES_PATH)
-        self.story = random.choice(load_json(CRIME_STORIES_PATH))
+        self.challenge_bank = load_json(CHALLENGES_PATH, [])
+        self.story_pool = load_json(CRIME_STORIES_PATH, [])
+        self.leaderboard_entries = load_json(LEADERBOARD_PATH, [])
         self.character_images = self._load_character_images()
-        self.current_level = 1
-        self.completed_levels: list[int] = []
-        self.score = 0
-        self.hint_index_by_challenge: dict[str, int] = {}
-        self.hint_press_count: dict[str, int] = {}
-        self.query_inputs = {challenge["id"]: "" for challenge in self.challenges}
-        self.last_results: dict[str, dict] = {}
-        self.feedback_messages: dict[str, tuple[str, str]] = {}
-        self.overlay_message = ""
 
-        self.editor = TextInput((920, 278, 480, 220))
+        self.editor = TextInput((920, 280, 485, 190))
         self.level_buttons: list[Button] = []
         self.preview_tabs: list[Button] = []
-        self.active_preview_index = 0
-        self.current_preview_rows: list[tuple] = []
         self.current_preview_columns: list[str] = []
+        self.current_preview_rows: list[tuple] = []
+        self.active_preview_index = 0
+        self.modal = None
+        self.modal_buttons: list[tuple[pygame.Rect, callable]] = []
 
-        self._build_level_buttons()
-        self._refresh_for_level_change()
+        self._start_new_game()
 
     def _load_character_images(self):
         loaded = {}
@@ -202,31 +264,81 @@ class DetectiveDesktopApp:
             loaded[role] = pygame.transform.smoothscale(image, (112, 150))
         return loaded
 
+    def _start_new_game(self):
+        grouped = group_challenges_by_level(self.challenge_bank)
+        expected_levels = list(range(1, 11))
+        missing = [level for level in expected_levels if level not in grouped]
+        if missing:
+            raise SystemExit(f"Missing challenge definitions for levels: {missing}")
+
+        self.story = random.choice(self.story_pool)
+        self.selected_challenges = {
+            level: random.choice(grouped[level]) for level in expected_levels
+        }
+        self.current_level = 1
+        self.completed_levels: list[int] = []
+        self.score = 0
+        self.current_streak = 0
+        self.max_streak = 0
+        self.perfect_levels = 0
+        self.earned_badges: list[str] = []
+        self.game_started_at = time.monotonic()
+        self.game_recorded = False
+        self.feedback_messages: dict[str, dict] = {}
+        self.last_results: dict[str, dict] = {}
+        self.query_inputs = {
+            challenge["id"]: "" for challenge in self.selected_challenges.values()
+        }
+        self.level_states = {
+            challenge["id"]: {
+                "attempts": 0,
+                "hint_count": 0,
+                "hint_index": -1,
+                "hint_used": False,
+                "is_perfect_candidate": True,
+                "started_at": None,
+                "completed_in": None,
+            }
+            for challenge in self.selected_challenges.values()
+        }
+        self.modal = None
+        self._build_level_buttons()
+        self._refresh_for_level_change()
+
     def get_challenge(self, level=None):
-        selected = level or self.current_level
-        base = next(challenge for challenge in self.challenges if challenge["level"] == selected)
+        selected_level = level or self.current_level
+        base = self.selected_challenges[selected_level]
         challenge = dict(base)
         challenge["story"] = challenge["story_template"].format(**self.story)
         challenge["case_update"] = challenge["case_update_template"].format(**self.story)
         return challenge
 
     def unlocked_level(self):
-        return min(len(self.challenges), max(1, len(self.completed_levels) + 1))
+        return min(len(self.selected_challenges), max(1, len(self.completed_levels) + 1))
+
+    def current_state(self):
+        challenge = self.get_challenge()
+        return self.level_states[challenge["id"]]
+
+    def _ensure_level_timer(self, challenge_id: str):
+        state = self.level_states[challenge_id]
+        if state["started_at"] is None:
+            state["started_at"] = time.monotonic()
 
     def _build_level_buttons(self):
         self.level_buttons.clear()
         start_x = 920
-        width = 88
-        gap = 8
-        for idx, challenge in enumerate(self.challenges):
-            level = challenge["level"]
-            rect = (start_x + idx * (width + gap), 190, width, 42)
+        width = 42
+        gap = 5
+        for level in range(1, 11):
+            rect = (start_x + (level - 1) * (width + gap), 192, width, 38)
             self.level_buttons.append(
-                Button(rect, f"{level}", lambda selected=level: self.open_level(selected), GOLD)
+                Button(rect, str(level), lambda selected=level: self.open_level(selected), GOLD)
             )
 
     def _refresh_for_level_change(self):
         challenge = self.get_challenge()
+        self._ensure_level_timer(challenge["id"])
         self.editor.set_text(self.query_inputs.get(challenge["id"], ""))
         self._load_preview_tables(challenge)
 
@@ -235,7 +347,7 @@ class DetectiveDesktopApp:
         self.active_preview_index = 0
         start_x = 50
         for idx, table_name in enumerate(challenge["tables"]):
-            rect = (start_x + idx * 144, 510, 134, 36)
+            rect = (start_x + idx * 156, 540, 146, 34)
             self.preview_tabs.append(
                 Button(rect, table_name, lambda selected=idx: self._set_preview(selected), TITLE)
             )
@@ -243,15 +355,9 @@ class DetectiveDesktopApp:
 
     def _set_preview(self, index):
         challenge = self.get_challenge()
-        self.active_preview_index = index
         table_name = challenge["tables"][index]
-        columns, rows, error = execute_query(f"SELECT * FROM {table_name} ORDER BY RANDOM() LIMIT 2")
-        if error:
-            self.current_preview_columns = ["error"]
-            self.current_preview_rows = [(error,)]
-        else:
-            self.current_preview_columns = columns
-            self.current_preview_rows = rows
+        self.active_preview_index = index
+        self.current_preview_columns, self.current_preview_rows = preview_table(table_name)
 
     def open_level(self, level):
         if level > self.unlocked_level():
@@ -267,6 +373,65 @@ class DetectiveDesktopApp:
             return "lock", True
         return "briefcase", False
 
+    def _set_feedback(self, challenge_id: str, kind: str, text: str, reveal_query=False):
+        self.feedback_messages[challenge_id] = {
+            "kind": kind,
+            "text": text,
+            "reveal_query": reveal_query,
+        }
+
+    def _break_streak(self):
+        self.current_streak = 0
+
+    def _record_game_if_needed(self):
+        if self.game_recorded:
+            return
+        duration_seconds = int(time.monotonic() - self.game_started_at)
+        entry = {
+            "played_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "case_name": self.story["case_name"],
+            "score": self.score,
+            "perfect_levels": self.perfect_levels,
+            "max_streak": self.max_streak,
+            "duration_seconds": duration_seconds,
+        }
+        self.leaderboard_entries.append(entry)
+        save_json(LEADERBOARD_PATH, self.leaderboard_entries)
+        self.game_recorded = True
+
+    def _show_message_modal(self, title: str, body: str):
+        self.modal = {
+            "title": title,
+            "body": body,
+            "buttons": [],
+            "dismiss_any": True,
+        }
+
+    def _show_confirm_modal(self, title: str, body: str, buttons: list[dict]):
+        self.modal = {
+            "title": title,
+            "body": body,
+            "buttons": buttons,
+            "dismiss_any": False,
+        }
+
+    def _close_modal(self):
+        self.modal = None
+        self.modal_buttons = []
+
+    def _request_new_game(self):
+        if not self.completed_levels:
+            self._start_new_game()
+            return
+        self._show_confirm_modal(
+            "New Game",
+            "Start a fresh case file and reset the current run? The leaderboard history will stay.",
+            [
+                {"label": "Cancel", "action": self._close_modal, "color": MUTED},
+                {"label": "Start New", "action": self._start_new_game, "color": GOLD},
+            ],
+        )
+
     def run(self):
         running = True
         while running:
@@ -277,10 +442,9 @@ class DetectiveDesktopApp:
                     running = False
                     continue
 
-                if self.overlay_message:
-                    if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
-                        self.overlay_message = ""
-                    continue
+                if self.modal:
+                    if self._handle_modal_event(event):
+                        continue
 
                 self.editor.handle_event(event)
 
@@ -295,161 +459,395 @@ class DetectiveDesktopApp:
 
         pygame.quit()
 
+    def _handle_modal_event(self, event):
+        if not self.modal:
+            return False
+        if self.modal["buttons"]:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for rect, action in self.modal_buttons:
+                    if rect.collidepoint(event.pos):
+                        self._close_modal()
+                        action()
+                        return True
+            return True
+        if self.modal["dismiss_any"] and event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
+            self._close_modal()
+            return True
+        return False
+
     def _handle_action_buttons(self, pos):
-        run_rect = pygame.Rect(920, 520, 228, 48)
-        hint_rect = pygame.Rect(1172, 520, 228, 48)
+        run_rect = pygame.Rect(920, 480, 154, 42)
+        hint_rect = pygame.Rect(1085, 480, 154, 42)
+        new_game_rect = pygame.Rect(1250, 480, 154, 42)
         if run_rect.collidepoint(pos):
             self.run_query()
         elif hint_rect.collidepoint(pos):
-            self.show_hint()
+            self.request_hint()
+        elif new_game_rect.collidepoint(pos):
+            self._request_new_game()
 
     def run_query(self):
         challenge = self.get_challenge()
         challenge_id = challenge["id"]
+        if challenge["level"] in self.completed_levels:
+            self._set_feedback(
+                challenge_id,
+                "info",
+                "This level is already solved. Progress, streaks, and score stay locked once a case is cleared.",
+            )
+            return
+        state = self.level_states[challenge_id]
         learner_query = self.editor.text.strip()
         self.query_inputs[challenge_id] = learner_query
-        result = validate_query_result(learner_query, challenge["expected_query"], challenge["order_matters"])
+        state["attempts"] += 1
+
+        result = validate_query_result(
+            learner_query, challenge["expected_query"], challenge["order_matters"]
+        )
         self.last_results[challenge_id] = {
             "columns": result["learner_columns"],
             "rows": result["learner_rows"],
         }
 
         if result["accepted"]:
-            if challenge["level"] not in self.completed_levels:
-                self.completed_levels.append(challenge["level"])
-                self.completed_levels.sort()
-                self.score += 10
-            self.feedback_messages[challenge_id] = ("success", challenge["success_explanation"])
-            if challenge["level"] < len(self.challenges):
-                self.current_level = challenge["level"] + 1
-                self.overlay_message = (
-                    f"Case Update\n\n{challenge['case_update']}\n\n"
-                    f"Level {challenge['level'] + 1} is now open.\n\nPress any key to close."
-                )
-            else:
-                self.overlay_message = (
-                    f"Case Closed\n\n{challenge['case_update']}\n\n"
-                    "Congratulations. You solved the case.\n\nPress any key to close."
-                )
-            self._refresh_for_level_change()
+            self._handle_success(challenge, state)
             return
 
-        if result["message"]:
-            self.feedback_messages[challenge_id] = ("warning", result["message"])
-        else:
-            self.show_hint(prefix="The query ran, but the result does not match this case yet.\n\n")
+        if state["is_perfect_candidate"]:
+            self._break_streak()
+        state["is_perfect_candidate"] = False
+        self._set_feedback(challenge_id, "warning", result["message"])
 
-    def show_hint(self, prefix=""):
-        challenge = self.get_challenge()
+    def _handle_success(self, challenge: dict, state: dict):
         challenge_id = challenge["id"]
-        self.hint_press_count[challenge_id] = self.hint_press_count.get(challenge_id, 0) + 1
-        if self.hint_press_count[challenge_id] >= 42:
-            self.feedback_messages[challenge_id] = (
-                "success",
-                f"Answer unlocked after 42 hints:\n{challenge['expected_query']}",
+        elapsed_seconds = int(time.monotonic() - state["started_at"])
+        state["completed_in"] = elapsed_seconds
+        level_score = calculate_level_score(elapsed_seconds, state["attempts"])
+        badge_bonus = 0
+        summary_parts = [
+            challenge["success_explanation"],
+            f"Level score: +{level_score} (time {elapsed_seconds}s, attempts {state['attempts']}).",
+        ]
+
+        if challenge["level"] not in self.completed_levels:
+            self.completed_levels.append(challenge["level"])
+            self.completed_levels.sort()
+
+        if state["is_perfect_candidate"] and not state["hint_used"]:
+            self.perfect_levels += 1
+            self.current_streak += 1
+            self.max_streak = max(self.max_streak, self.current_streak)
+            summary_parts.append(f"Perfect clear. Streak is now {self.current_streak}.")
+            badge_name = BADGE_MILESTONES.get(self.current_streak)
+            if badge_name and badge_name not in self.earned_badges:
+                self.earned_badges.append(badge_name)
+                badge_bonus = badge_bonus_for_streak(self.current_streak)
+                summary_parts.append(f"Badge earned: {badge_name} (+{badge_bonus}).")
+        else:
+            self.current_streak = 0
+            summary_parts.append("Case solved, but the streak does not continue on this level.")
+
+        self.score += level_score + badge_bonus
+        self._set_feedback(challenge_id, "success", "\n\n".join(summary_parts))
+
+        if challenge["level"] < len(self.selected_challenges):
+            self.current_level = challenge["level"] + 1
+            self._refresh_for_level_change()
+            self._show_message_modal(
+                "Case Update",
+                f"{challenge['case_update']}\n\nLevel {challenge['level'] + 1} is now open.",
             )
             return
-        current = self.hint_index_by_challenge.get(challenge_id, -1) + 1
-        self.hint_index_by_challenge[challenge_id] = min(current, len(challenge["hints"]) - 1)
-        hint = challenge["hints"][self.hint_index_by_challenge[challenge_id]]
-        self.feedback_messages[challenge_id] = ("warning", f"{prefix}Hint: {hint}")
+
+        self._record_game_if_needed()
+        total_time = int(time.monotonic() - self.game_started_at)
+        self._show_confirm_modal(
+            "Case Closed",
+            (
+                f"{challenge['case_update']}\n\n"
+                f"Final score: {self.score}\n"
+                f"Perfect clears: {self.perfect_levels}/10\n"
+                f"Best streak: {self.max_streak}\n"
+                f"Run time: {format_duration(total_time)}"
+            ),
+            [
+                {"label": "Close", "action": self._close_modal, "color": MUTED},
+                {"label": "New Game", "action": self._start_new_game, "color": GOLD},
+            ],
+        )
+
+    def request_hint(self):
+        challenge = self.get_challenge()
+        state = self.level_states[challenge["id"]]
+        if self.current_streak >= 2 and state["is_perfect_candidate"]:
+            self._show_confirm_modal(
+                "Use Hint?",
+                (
+                    f"You are on a streak of {self.current_streak}. "
+                    "Taking a hint will break it for this run. Continue?"
+                ),
+                [
+                    {"label": "Keep Streak", "action": self._close_modal, "color": MUTED},
+                    {"label": "Use Hint", "action": self._grant_hint, "color": WARNING},
+                ],
+            )
+            return
+        self._grant_hint()
+
+    def _grant_hint(self):
+        challenge = self.get_challenge()
+        challenge_id = challenge["id"]
+        state = self.level_states[challenge_id]
+        state["hint_count"] += 1
+
+        if state["is_perfect_candidate"]:
+            self._break_streak()
+        state["hint_used"] = True
+        state["is_perfect_candidate"] = False
+
+        if state["hint_count"] >= 42:
+            self._set_feedback(
+                challenge_id,
+                "success",
+                f"Answer unlocked after 42 hints:\n{challenge['expected_query']}",
+                reveal_query=True,
+            )
+            return
+
+        if state["hint_count"] in REVEAL_THRESHOLDS:
+            reveal_index = REVEAL_THRESHOLDS[state["hint_count"]]
+            reveal_hint = challenge["reveal_hints"][reveal_index]
+            self._set_feedback(
+                challenge_id,
+                "warning",
+                f"Deeper clue {state['hint_count']}: {reveal_hint}",
+            )
+            return
+
+        state["hint_index"] = min(state["hint_index"] + 1, len(challenge["hints"]) - 1)
+        hint = challenge["hints"][state["hint_index"]]
+        self._set_feedback(challenge_id, "warning", f"Hint: {hint}")
+
+    def leaderboard_rows(self) -> list[dict]:
+        ordered = sorted(
+            self.leaderboard_entries,
+            key=lambda row: (-row["score"], row["duration_seconds"], -row["max_streak"]),
+        )
+        return ordered[:5]
 
     def draw(self):
         self.screen.fill(BG)
         self._draw_header()
         self._draw_left_panel()
         self._draw_right_panel()
-        if self.overlay_message:
-            self._draw_overlay()
+        if self.modal:
+            self._draw_modal()
         pygame.display.flip()
 
     def _draw_header(self):
-        draw_rounded_rect(self.screen, TITLE, pygame.Rect(30, 24, 980, 104), radius=18)
-        draw_rounded_rect(self.screen, (239, 227, 206), pygame.Rect(1035, 24, 385, 104), radius=18, border=2, border_color=ACCENT)
+        draw_rounded_rect(self.screen, TITLE, pygame.Rect(30, 24, 980, 108), radius=18)
+        draw_rounded_rect(
+            self.screen,
+            (239, 227, 206),
+            pygame.Rect(1035, 24, 385, 108),
+            radius=18,
+            border=2,
+            border_color=ACCENT,
+        )
         title = self.title_font.render("SQL Detective Academy", True, WHITE)
         self.screen.blit(title, (52, 42))
         subtitle = self.small_font.render(
-            f"Work the {self.story['case_name']}, write real SQL, and solve each lead against the live SQLite database.",
+            f"Work the {self.story['case_name']} with the desktop case board and a live SQLite database.",
             True,
             WHITE,
         )
-        self.screen.blit(subtitle, (52, 82))
+        self.screen.blit(subtitle, (52, 84))
 
+        challenge = self.get_challenge()
+        state = self.level_states[challenge["id"]]
+        elapsed = (
+            int(time.monotonic() - state["started_at"]) if state["started_at"] is not None else 0
+        )
         progress_lines = [
-            f"Current Level: {self.current_level}",
+            f"Level: {self.current_level}/10",
             f"Score: {self.score}",
-            f"Completed: {len(self.completed_levels)} / {len(self.challenges)}",
+            f"Streak: {self.current_streak}",
+            f"Attempts: {state['attempts']}",
+            f"Time: {format_duration(elapsed)}",
+            f"Completed: {len(self.completed_levels)}/10",
         ]
-        y = 44
-        for line in progress_lines:
-            label = self.body_font.render(line, True, DARK)
-            self.screen.blit(label, (1058, y))
-            y += 24
+        y = 38
+        for index, line in enumerate(progress_lines):
+            column_x = 1056 if index < 3 else 1228
+            row_y = y + (index % 3) * 22
+            label = self.small_font.render(line, True, DARK)
+            self.screen.blit(label, (column_x, row_y))
 
     def _draw_left_panel(self):
-        draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 720), radius=18)
+        draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 750), radius=18)
         challenge = self.get_challenge()
         self._draw_avatar_bubble(
-            pygame.Rect(50, 170, 810, 220),
+            pygame.Rect(50, 170, 810, 215),
             "Lead Detective Mara Voss",
             f"{challenge['title']}\n\n{challenge['story']}",
             bubble_color=CARD,
         )
         self._draw_avatar_bubble(
-            pygame.Rect(50, 400, 810, 92),
+            pygame.Rect(50, 392, 810, 105),
             "Analyst Theo",
-            challenge["description"],
+            f"{challenge['description']}\n\nFocus: {challenge['concept']}",
             bubble_color=(254, 243, 217),
         )
         for tab in self.preview_tabs:
             tab.draw(self.screen, self.small_font)
-        self._draw_table_box(pygame.Rect(50, 555, 810, 152), "Table Preview", self.current_preview_columns, self.current_preview_rows)
+        self._draw_table_box(
+            pygame.Rect(50, 580, 810, 145),
+            "Table Preview",
+            self.current_preview_columns,
+            self.current_preview_rows,
+        )
         result = self.last_results.get(challenge["id"], {"columns": [], "rows": []})
-        self._draw_table_box(pygame.Rect(50, 723, 810, 127), "Query Result", result["columns"], result["rows"])
+        self._draw_table_box(
+            pygame.Rect(50, 740, 810, 140),
+            "Query Result",
+            result["columns"],
+            result["rows"],
+        )
 
     def _draw_right_panel(self):
-        draw_rounded_rect(self.screen, PANEL, pygame.Rect(900, 150, 520, 720), radius=18)
+        draw_rounded_rect(self.screen, PANEL, pygame.Rect(900, 150, 520, 750), radius=18)
         header = self.header_font.render("Case Files", True, DARK)
         self.screen.blit(header, (920, 160))
 
-        for button, challenge in zip(self.level_buttons, self.challenges):
-            icon, disabled = self.level_button_state(challenge["level"])
-            button.text = f"{challenge['level']}"
+        for button, level in zip(self.level_buttons, range(1, 11)):
+            icon, disabled = self.level_button_state(level)
+            button.text = str(level)
             button.disabled = disabled
             button.icon = icon
             button.draw(self.screen, self.small_font)
 
         editor_label = self.header_font.render("SQL Editor", True, DARK)
-        self.screen.blit(editor_label, (920, 242))
+        self.screen.blit(editor_label, (920, 248))
         self.editor.draw(self.screen, self.mono_font)
 
-        run_button = Button((920, 512, 228, 48), "Run Query", lambda: None, SUCCESS)
-        hint_button = Button((1172, 512, 228, 48), "Show Hint", lambda: None, WARNING)
-        run_button.draw(self.screen, self.body_font)
-        hint_button.draw(self.screen, self.body_font)
+        Button((920, 480, 154, 42), "Run Query", lambda: None, SUCCESS).draw(
+            self.screen, self.body_font
+        )
+        Button((1085, 480, 154, 42), "Show Hint", lambda: None, WARNING).draw(
+            self.screen, self.body_font
+        )
+        Button((1250, 480, 154, 42), "New Game", lambda: None, TITLE).draw(
+            self.screen, self.body_font
+        )
 
         challenge = self.get_challenge()
-        feedback_kind, feedback_text = self.feedback_messages.get(
+        feedback = self.feedback_messages.get(
             challenge["id"],
-            ("info", "Run a query to test your lead, or ask for a hint if the case feels stuck."),
+            {
+                "kind": "info",
+                "text": (
+                    "Run a query to test your lead. Perfect clears keep the streak alive. "
+                    "Hints break the streak."
+                ),
+                "reveal_query": False,
+            },
         )
-        bubble_color = CARD if feedback_kind == "info" else ((233, 247, 229) if feedback_kind == "success" else (249, 237, 219))
-        self._draw_avatar_bubble(
-            pygame.Rect(920, 582, 480, 238),
-            "Desk Sergeant Imani",
-            feedback_text,
-            bubble_color=bubble_color,
-            allow_query_reveal=feedback_kind == "success" and feedback_text.startswith("Answer unlocked"),
-        )
+        bubble_color = CARD
+        if feedback["kind"] == "success":
+            bubble_color = (233, 247, 229)
+        elif feedback["kind"] == "warning":
+            bubble_color = (249, 237, 219)
+        elif feedback["kind"] == "error":
+            bubble_color = (245, 227, 227)
 
-    def _draw_avatar_bubble(self, rect, speaker, text, bubble_color=CARD, allow_query_reveal=False):
+        self._draw_avatar_bubble(
+            pygame.Rect(920, 535, 480, 132),
+            "Desk Sergeant Imani",
+            feedback["text"],
+            bubble_color=bubble_color,
+            allow_query_reveal=feedback["reveal_query"],
+        )
+        self._draw_badges_box(pygame.Rect(920, 678, 480, 74))
+        self._draw_leaderboard_box(pygame.Rect(920, 760, 480, 124))
+
+    def _draw_badges_box(self, rect):
+        draw_rounded_rect(self.screen, CARD, rect, radius=16, border=2, border_color=ACCENT)
+        header = self.header_font.render("Badges", True, DARK)
+        self.screen.blit(header, (rect.x + 14, rect.y + 10))
+        streak_label = self.small_font.render(
+            f"Current streak {self.current_streak} | Best {self.max_streak}",
+            True,
+            DARK,
+        )
+        self.screen.blit(streak_label, (rect.x + 112, rect.y + 14))
+        badges = self.earned_badges or ["No badge yet"]
+        colors = {
+            "Bronze Streak": BRONZE,
+            "Silver Streak": SILVER,
+            "Gold Streak": GOLD,
+            "No badge yet": MUTED,
+        }
+        x = rect.x + 18
+        for badge in badges:
+            width = max(110, self.small_font.size(badge)[0] + 26)
+            pill = pygame.Rect(x, rect.y + 40, width, 24)
+            draw_rounded_rect(
+                self.screen,
+                colors.get(badge, GOLD),
+                pill,
+                radius=12,
+                border=1,
+                border_color=ACCENT,
+            )
+            label = self.small_font.render(badge, True, WHITE)
+            self.screen.blit(label, (pill.x + 12, pill.y + 4))
+            x += width + 10
+
+    def _draw_leaderboard_box(self, rect):
+        draw_rounded_rect(self.screen, CARD, rect, radius=16, border=2, border_color=ACCENT)
+        header = self.header_font.render("Leaderboard", True, DARK)
+        games_label = self.small_font.render(
+            f"Games played: {len(self.leaderboard_entries)}", True, DARK
+        )
+        self.screen.blit(header, (rect.x + 14, rect.y + 8))
+        self.screen.blit(games_label, (rect.x + 150, rect.y + 12))
+
+        columns = [("Rank", 18), ("Score", 78), ("Perfect", 150), ("Streak", 242), ("Time", 330)]
+        for label, x_offset in columns:
+            text = self.tiny_font.render(label, True, MUTED)
+            self.screen.blit(text, (rect.x + x_offset, rect.y + 34))
+
+        for index, row in enumerate(self.leaderboard_rows(), start=1):
+            y = rect.y + 52 + (index - 1) * 16
+            values = [
+                str(index),
+                str(row["score"]),
+                str(row["perfect_levels"]),
+                str(row["max_streak"]),
+                format_duration(row["duration_seconds"]),
+            ]
+            positions = [18, 78, 150, 242, 330]
+            for value, x_offset in zip(values, positions):
+                text = self.tiny_font.render(value, True, DARK)
+                self.screen.blit(text, (rect.x + x_offset, y))
+
+    def _draw_avatar_bubble(
+        self,
+        rect,
+        speaker,
+        text,
+        bubble_color=CARD,
+        allow_query_reveal=False,
+    ):
         x, y, w, h = rect
         avatar = self.character_images[speaker]
         avatar_x = x + 8
         avatar_y = y + max(4, (h - avatar.get_height()) // 2)
         self.screen.blit(avatar, (avatar_x, avatar_y))
         bubble = pygame.Rect(x + 132, y, w - 132, h)
-        draw_rounded_rect(self.screen, bubble_color, bubble, radius=18, border=2, border_color=ACCENT)
+        draw_rounded_rect(
+            self.screen, bubble_color, bubble, radius=18, border=2, border_color=ACCENT
+        )
         tail_mid = y + min(max(h // 2, 42), h - 42)
         pygame.draw.polygon(
             self.screen,
@@ -464,16 +862,16 @@ class DetectiveDesktopApp:
             2,
         )
         speaker_surface = self.small_font.render(speaker, True, ACCENT)
-        self.screen.blit(speaker_surface, (bubble.x + 18, bubble.y + 16))
+        self.screen.blit(speaker_surface, (bubble.x + 18, bubble.y + 14))
         self._draw_text_block_fit(
             text,
             DARK,
             bubble.x + 18,
-            bubble.y + 42,
-            bubble.width - 36,
-            bubble.height - 58,
-            preferred_size=17,
-            min_size=13,
+            bubble.y + 38,
+            bubble.width - 34,
+            bubble.height - 52,
+            preferred_size=16,
+            min_size=12,
             monospace=allow_query_reveal,
         )
 
@@ -491,21 +889,30 @@ class DetectiveDesktopApp:
         available_width = rect.width - 28
         col_width = max(90, available_width // max(1, len(columns)))
         for idx, column in enumerate(columns[:8]):
-            col_rect = pygame.Rect(inner_x + idx * col_width, inner_y, col_width - 4, 28)
+            col_rect = pygame.Rect(inner_x + idx * col_width, inner_y, col_width - 4, 24)
             draw_rounded_rect(self.screen, (228, 214, 191), col_rect, radius=8)
-            label = self.small_font.render(str(column), True, DARK)
-            self.screen.blit(label, (col_rect.x + 6, col_rect.y + 6))
+            label = self.tiny_font.render(str(column), True, DARK)
+            self.screen.blit(label, (col_rect.x + 6, col_rect.y + 5))
 
-        row_y = inner_y + 36
-        max_rows = 4 if rect.height < 180 else 5
+        row_y = inner_y + 30
+        max_rows = 3 if rect.height < 150 else 4
         for row in rows[:max_rows]:
             for idx, value in enumerate(row[:8]):
                 value_text = str(value)
-                value_rect = pygame.Rect(inner_x + idx * col_width, row_y, col_width - 4, 26)
-                draw_rounded_rect(self.screen, (250, 245, 234), value_rect, radius=6, border=1, border_color=(208, 191, 165))
-                rendered = self.small_font.render(value_text[:14], True, DARK)
+                value_rect = pygame.Rect(
+                    inner_x + idx * col_width, row_y, col_width - 4, 24
+                )
+                draw_rounded_rect(
+                    self.screen,
+                    (250, 245, 234),
+                    value_rect,
+                    radius=6,
+                    border=1,
+                    border_color=(208, 191, 165),
+                )
+                rendered = self.tiny_font.render(value_text[:14], True, DARK)
                 self.screen.blit(rendered, (value_rect.x + 6, value_rect.y + 5))
-            row_y += 32
+            row_y += 28
 
     def _draw_text_block(self, text, font, color, x, y, width, max_lines=None):
         lines: list[str] = []
@@ -525,7 +932,18 @@ class DetectiveDesktopApp:
             self.screen.blit(rendered, (x, y))
             y += font.get_height() + 5
 
-    def _draw_text_block_fit(self, text, color, x, y, width, height, preferred_size=17, min_size=13, monospace=False):
+    def _draw_text_block_fit(
+        self,
+        text,
+        color,
+        x,
+        y,
+        width,
+        height,
+        preferred_size=17,
+        min_size=13,
+        monospace=False,
+    ):
         chosen_font = None
         chosen_lines = None
         for size in range(preferred_size, min_size - 1, -1):
@@ -565,18 +983,49 @@ class DetectiveDesktopApp:
             self.screen.blit(rendered, (x, current_y))
             current_y += chosen_font.get_height() + 5
 
-    def _draw_overlay(self):
+    def _draw_modal(self):
         shade = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
-        shade.fill((24, 18, 14, 180))
+        shade.fill((24, 18, 14, 190))
         self.screen.blit(shade, (0, 0))
-        card = pygame.Rect(280, 210, 860, 320)
+        card = pygame.Rect(260, 210, 930, 360)
         draw_rounded_rect(self.screen, CARD, card, radius=20, border=3, border_color=ACCENT)
         overlay_avatar = self.character_images["Case Update"]
-        self.screen.blit(overlay_avatar, (card.x + 24, card.y + 90))
-        title, body = self.overlay_message.split("\n\n", 1)
-        title_surface = self.header_font.render(title, True, DARK)
+        self.screen.blit(overlay_avatar, (card.x + 24, card.y + 108))
+        title_surface = self.header_font.render(self.modal["title"], True, DARK)
         self.screen.blit(title_surface, (card.x + 24, card.y + 24))
-        self._draw_text_block(body, self.body_font, DARK, card.x + 160, card.y + 74, card.width - 190, max_lines=10)
+        self._draw_text_block(
+            self.modal["body"],
+            self.body_font,
+            DARK,
+            card.x + 160,
+            card.y + 76,
+            card.width - 190,
+            max_lines=11,
+        )
+
+        self.modal_buttons = []
+        buttons = self.modal["buttons"]
+        if not buttons:
+            note = self.small_font.render("Press any key or click to continue.", True, MUTED)
+            self.screen.blit(note, (card.x + 160, card.y + 314))
+            return
+
+        total_width = len(buttons) * 150 + (len(buttons) - 1) * 16
+        start_x = card.centerx - total_width // 2
+        for index, button in enumerate(buttons):
+            rect = pygame.Rect(start_x + index * 166, card.y + 300, 150, 40)
+            draw_rounded_rect(
+                self.screen,
+                button["color"],
+                rect,
+                radius=12,
+                border=2,
+                border_color=ACCENT,
+            )
+            label = self.body_font.render(button["label"], True, WHITE)
+            label_rect = label.get_rect(center=rect.center)
+            self.screen.blit(label, label_rect)
+            self.modal_buttons.append((rect, button["action"]))
 
 
 def main():

@@ -1,54 +1,64 @@
 # SQL Detective Academy
 
-This directory contains the MVP for Task 4: a beginner-friendly SQL learning game built with Streamlit and backed by the real SQLite database in `detective.db`.
+SQL Detective Academy is a desktop-only SQL learning game built with `pygame` and backed by a real SQLite database.
 
-It also now includes a desktop `pygame` version with cartoon-style detective avatars and speech-bubble dialogue.
-
-## Current App Scope
-
-- Streamlit UI in `app.py`
-- Challenge definitions in `challenges.json`
-- Story seeds in `crime_stories.json`
-- Query execution and result validation in `validation.py`
-- Real SQL executed against `detective.db`
-- `SELECT`-only safety rules
-- Session-state progress tracking
-- Five progressive levels:
-  - Level 1: inspect data with `SELECT *` and `LIMIT`
-  - Level 2: filter rows with `WHERE`
-  - Level 3: sort and narrow results with `ORDER BY` and `LIMIT`
-  - Level 4: summarize data with `GROUP BY` and `COUNT`
-  - Level 5: combine tables with `JOIN`
+The active entry point is [desktop_app.py](/home/roee/week_1/task_4/desktop_app.py). The old Streamlit path and stale web-focused files were removed so the repository reflects only the current game.
 
 ## Run
 
-From this directory:
-
 ```bash
-streamlit run app.py
-```
-
-Desktop version:
-
-```bash
-pip install pygame
+pip install -r requirements.txt
 python3 desktop_app.py
 ```
 
-## Files
+If you use the local alias discussed during verification:
 
-- `app.py`: main UI and gameplay flow
-- `desktop_app.py`: desktop `pygame` GUI with drawn detective avatars and speech-bubble storytelling
-- `challenges.json`: case stories, prompts, expected queries, and hints
-- `crime_stories.json`: persistent pool of 20 different investigation story seeds
-- `validation.py`: SQLite execution, query safety checks, and result comparison
-- `detective.db`: existing investigation database used by the game
+```bash
+agentenv
+python3 desktop_app.py
+```
 
-## Design Notes
+## What The Game Includes
 
-- Validation compares query results, not exact SQL text.
-- Order is preserved only for challenges where `order_matters` is `true`.
-- Table preview uses random two-row samples to help beginners inspect schema without revealing too much.
-- Hints guide the learner conceptually and do not expose the full answer query.
-- The case flow now follows one connected story: the Blackwood murder investigation.
-- One of 20 persistent crime story variants is chosen when the player enters the app and stays fixed through all levels in that session.
+- A real SQLite database in [detective.db](/home/roee/week_1/task_4/detective.db)
+- A desktop `pygame` app in [desktop_app.py](/home/roee/week_1/task_4/desktop_app.py)
+- SQL safety and result validation in [validation.py](/home/roee/week_1/task_4/validation.py)
+- A 10-level challenge bank with 2 variants per level in [challenges.json](/home/roee/week_1/task_4/challenges.json)
+- Story variants in [crime_stories.json](/home/roee/week_1/task_4/crime_stories.json)
+- Local leaderboard persistence through `leaderboard.json`
+
+## Progression
+
+The game now teaches SQL in 10 steps:
+
+1. `SELECT *` and `LIMIT`
+2. selecting specific columns
+3. `WHERE`
+4. multiple `WHERE` conditions
+5. `ORDER BY` and `LIMIT`
+6. basic aggregation
+7. `GROUP BY`
+8. `JOIN`
+9. `JOIN` with filtering
+10. final evidence joins
+
+Each run selects one challenge variant per level, which reduces repetition while keeping the story structure intact.
+
+## Scoring And Streaks
+
+- Score is based on time and attempts.
+- Perfect clears require no wrong attempt and no hint usage.
+- Perfect clears extend the streak.
+- Any mistake or hint resets the streak.
+- Streak badges are awarded at 3, 5, and 7.
+- If the player has a streak of 2 or more, the game asks for confirmation before spending it on a hint.
+
+## Docs
+
+- [GAMEPLAY.md](/home/roee/week_1/task_4/GAMEPLAY.md): gameplay rules and architecture notes
+- [PROGRESS.md](/home/roee/week_1/task_4/PROGRESS.md): current change log for the desktop-only version
+
+## Git Notes
+
+- `leaderboard.json` is ignored so local play history is not committed.
+- The repo should now contain only the active desktop runtime, its assets, and current docs.

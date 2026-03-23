@@ -1,62 +1,296 @@
 [
   {
-    "id": "level_1_first_five_suspects",
+    "id": "level_1_registry_peek",
     "level": 1,
-    "title": "Case 1: The Blackwood File",
+    "title": "Level 1: The Blackwood File",
     "concept": "SELECT * and LIMIT",
-    "story_template": "{opening}. Before the senior detectives hand you the full registry, they want you to pull a small sample of suspects tied to the case file.",
-    "description": "Show the first 5 suspects from the suspects table.",
+    "story_template": "{opening}. Before the senior detectives trust you with the whole registry, they want a quick first look at the suspect board.",
+    "description": "Show the first 5 rows from the suspects table.",
     "tables": ["suspects"],
     "expected_query": "SELECT * FROM suspects LIMIT 5;",
     "order_matters": true,
     "hints": [
-      "This case is only about reading data, not filtering it.",
-      "Use SELECT * to return every column, then keep the result small with LIMIT.",
-      "LIMIT controls how many rows SQLite returns. You need only 5 rows."
+      "This level is about reading rows, not filtering them.",
+      "Use SELECT * to bring back every column.",
+      "Use LIMIT so the result only shows 5 rows."
     ],
-    "success_explanation": "You inspected a manageable slice of the registry by returning all columns but limiting the result to five rows.",
-    "case_update_template": "The first five records give the academy a starting pool of names, ages, cities, and occupations. One pattern stands out immediately: Riverton appears more than once, and the detectives decide that city deserves the next look in the {case_name} investigation."
+    "reveal_hints": [
+      "Start with SELECT * and pull from suspects.",
+      "The skeleton is SELECT * FROM suspects ...",
+      "You only need one extra keyword after the table name: LIMIT.",
+      "Almost there: SELECT * FROM suspects LIMIT 5"
+    ],
+    "success_explanation": "You opened the registry with a safe sample, which is the right first move before a deeper search.",
+    "case_update_template": "The first names on the board give the academy its opening map of people, cities, and jobs. Riverton appears more than once, so the detectives decide the next pass in the {case_name} should narrow the field."
   },
   {
-    "id": "level_2_riverton_suspects",
+    "id": "level_1_location_peek",
+    "level": 1,
+    "title": "Level 1: Site Log Warmup",
+    "concept": "SELECT * and LIMIT",
+    "story_template": "Before anyone chases a lead from {scene}, the academy wants you to inspect a small slice of the locations table to understand the terrain around the {case_name}.",
+    "description": "Show the first 5 rows from the locations table.",
+    "tables": ["locations"],
+    "expected_query": "SELECT * FROM locations LIMIT 5;",
+    "order_matters": true,
+    "hints": [
+      "Do not filter yet. Just inspect the table.",
+      "SELECT * returns every column in locations.",
+      "Keep the sample small with LIMIT 5."
+    ],
+    "reveal_hints": [
+      "Use SELECT * against locations.",
+      "The query begins SELECT * FROM locations.",
+      "The last piece is a LIMIT clause.",
+      "Almost there: SELECT * FROM locations LIMIT 5"
+    ],
+    "success_explanation": "You sampled the site table cleanly and got a quick sense of the investigation map.",
+    "case_update_template": "The location records sketch out the physical world around {scene}. With the map in mind, the academy is ready to move from inspection to a tighter briefing."
+  },
+  {
+    "id": "level_2_suspect_briefing",
     "level": 2,
-    "title": "Case 2: The Riverton Lead",
+    "title": "Level 2: Briefing Cards",
+    "concept": "SELECT specific columns and LIMIT",
+    "story_template": "The lead detective does not want a full dump yet. For the {case_name}, she wants a cleaner briefing card with only the essential suspect fields.",
+    "description": "Show the first 6 suspects, but only return suspect_id, name, and occupation.",
+    "tables": ["suspects"],
+    "expected_query": "SELECT suspect_id, name, occupation FROM suspects LIMIT 6;",
+    "order_matters": true,
+    "hints": [
+      "You no longer need every column.",
+      "Name the three columns directly in SELECT.",
+      "Keep the briefing short with LIMIT 6."
+    ],
+    "reveal_hints": [
+      "Your SELECT list should mention suspect_id, name, and occupation.",
+      "The query should read from suspects and end with LIMIT 6.",
+      "The skeleton is SELECT suspect_id, name, occupation FROM suspects ...",
+      "Almost there: SELECT suspect_id, name, occupation FROM suspects LIMIT 6"
+    ],
+    "success_explanation": "You trimmed the output to the exact fields the detectives needed, which is the next step after a raw table peek.",
+    "case_update_template": "The briefing cards are sharper than the raw registry, and the team can now move into targeted filtering tied to {victim} and the movements around {scene}."
+  },
+  {
+    "id": "level_2_location_briefing",
+    "level": 2,
+    "title": "Level 2: Site Summary Cards",
+    "concept": "SELECT specific columns and LIMIT",
+    "story_template": "Before the next call on the {case_name}, the academy wants location cards that are easier to read than the full table dump.",
+    "description": "Show the first 5 locations, but only return location_id, location_name, and city.",
+    "tables": ["locations"],
+    "expected_query": "SELECT location_id, location_name, city FROM locations LIMIT 5;",
+    "order_matters": true,
+    "hints": [
+      "Choose only the columns the request names.",
+      "You are selecting three columns from locations.",
+      "Use LIMIT 5 to keep the card stack short."
+    ],
+    "reveal_hints": [
+      "The SELECT list should be location_id, location_name, and city.",
+      "Read from the locations table.",
+      "The final keyword you need is LIMIT.",
+      "Almost there: SELECT location_id, location_name, city FROM locations LIMIT 5"
+    ],
+    "success_explanation": "You created a cleaner set of location cards by selecting only the fields that matter for a quick read.",
+    "case_update_template": "With the cards reduced to the right columns, the team can stop scanning noise and start filtering records tied to the strongest lead in {case_name}."
+  },
+  {
+    "id": "level_3_riverton_suspects",
+    "level": 3,
+    "title": "Level 3: The Riverton Lead",
     "concept": "WHERE",
-    "story_template": "Witnesses say someone connected to {victim} fled toward Riverton before dawn after the trouble at {scene}. The lead detective wants a clean briefing sheet that lists only the people in the suspect registry tied to that city.",
+    "story_template": "Witnesses say someone connected to {victim} fled toward Riverton before dawn after the trouble at {scene}. The lead detective wants a clean sheet showing only suspects tied to that city.",
     "description": "Find the names and cities of all suspects located in Riverton.",
     "tables": ["suspects"],
     "expected_query": "SELECT name, city FROM suspects WHERE city = 'Riverton';",
     "order_matters": false,
     "hints": [
-      "The answer should return only two columns: name and city.",
-      "Use WHERE to keep only rows where the city matches Riverton.",
-      "A WHERE clause filters rows. Keep the selected columns narrow so the result matches the briefing request."
+      "Return only two columns: name and city.",
+      "Use WHERE to keep only Riverton rows.",
+      "The condition should compare city to the text 'Riverton'."
     ],
-    "success_explanation": "You filtered the registry to one city and returned only the fields the briefing asked for.",
-    "case_update_template": "The Riverton list is shorter than the full registry, which sharpens the case. A follow-up sweep around {scene} suggests the killer or an accomplice may have returned to a secured location after {victim}'s death."
+    "reveal_hints": [
+      "You need SELECT name, city.",
+      "The filter belongs in a WHERE clause on city.",
+      "The condition should be city = 'Riverton'.",
+      "Almost there: SELECT name, city FROM suspects WHERE city = 'Riverton'"
+    ],
+    "success_explanation": "You filtered the registry down to one city and returned only the fields needed for the briefing.",
+    "case_update_template": "The Riverton list is shorter than the full registry, which sharpens the case. A follow-up sweep around {scene} suggests the killer or an accomplice may have moved through a more specific slice of the suspect board."
   },
   {
-    "id": "level_3_latest_access_log",
+    "id": "level_3_high_risk_watchlist",
     "level": 3,
-    "title": "Case 3: Midnight Entry",
+    "title": "Level 3: Watchlist Filter",
+    "concept": "WHERE",
+    "story_template": "The academy wants one quick watchlist before the next meeting on {case_name}. Start by pulling only the suspects already marked as the highest immediate risk.",
+    "description": "Show the name and risk_level of all suspects whose risk_level is HIGH.",
+    "tables": ["suspects"],
+    "expected_query": "SELECT name, risk_level FROM suspects WHERE risk_level = 'HIGH';",
+    "order_matters": false,
+    "hints": [
+      "Return only two columns: name and risk_level.",
+      "Use WHERE on the risk_level column.",
+      "The value you need is the text 'HIGH'."
+    ],
+    "reveal_hints": [
+      "Your SELECT list should be name and risk_level.",
+      "The filter belongs in WHERE.",
+      "The condition should be risk_level = 'HIGH'.",
+      "Almost there: SELECT name, risk_level FROM suspects WHERE risk_level = 'HIGH'"
+    ],
+    "success_explanation": "You used a basic filter to create a high-priority watchlist from the full suspect table.",
+    "case_update_template": "The high-risk list trims the noise around {case_name}, but the next move needs a more precise condition than a single filter."
+  },
+  {
+    "id": "level_4_city_and_risk",
+    "level": 4,
+    "title": "Level 4: Narrow the Field",
+    "concept": "WHERE with multiple conditions",
+    "story_template": "A single clue is no longer enough. For the {case_name}, the lead detective wants the overlap between Riverton and the highest risk tier before authorizing surveillance.",
+    "description": "Show the name and occupation of suspects who are in Riverton and have risk_level HIGH.",
+    "tables": ["suspects"],
+    "expected_query": "SELECT name, occupation FROM suspects WHERE city = 'Riverton' AND risk_level = 'HIGH';",
+    "order_matters": false,
+    "hints": [
+      "You need two columns: name and occupation.",
+      "This level needs two conditions in the WHERE clause.",
+      "Connect the city filter and the risk filter with AND."
+    ],
+    "reveal_hints": [
+      "The SELECT list should be name and occupation.",
+      "Filter on city = 'Riverton' and risk_level = 'HIGH'.",
+      "Use AND to combine the conditions.",
+      "Almost there: SELECT name, occupation FROM suspects WHERE city = 'Riverton' AND risk_level = 'HIGH'"
+    ],
+    "success_explanation": "You tightened the search by combining two conditions, which is exactly how the academy narrows a busy suspect board.",
+    "case_update_template": "The overlap between city and risk finally gives the academy a sharper target around {victim}. The next step is to sort live records by urgency and pick the strongest single lead."
+  },
+  {
+    "id": "level_4_secure_ashford_sites",
+    "level": 4,
+    "title": "Level 4: Secured Site Filter",
+    "concept": "WHERE with multiple conditions",
+    "story_template": "The case team suspects a secure Ashford site may matter more than the public spaces around {scene}. Pull only the Ashford records that meet the minimum security threshold.",
+    "description": "Show location_name and security_level for locations in Ashford where security_level is at least 2.",
+    "tables": ["locations"],
+    "expected_query": "SELECT location_name, security_level FROM locations WHERE city = 'Ashford' AND security_level >= 2;",
+    "order_matters": false,
+    "hints": [
+      "Return two columns: location_name and security_level.",
+      "You need both a city condition and a security condition.",
+      "Use AND, and compare security_level with >= 2."
+    ],
+    "reveal_hints": [
+      "Your SELECT list should be location_name and security_level.",
+      "Filter on city = 'Ashford'.",
+      "The second condition is security_level >= 2.",
+      "Almost there: SELECT location_name, security_level FROM locations WHERE city = 'Ashford' AND security_level >= 2"
+    ],
+    "success_explanation": "You combined text and numeric conditions to isolate the secure Ashford sites relevant to the investigation.",
+    "case_update_template": "The secure Ashford list gives the detectives a clearer map of where to watch next. Now they want the single strongest record ranked to the top."
+  },
+  {
+    "id": "level_5_latest_access_log",
+    "level": 5,
+    "title": "Level 5: Midnight Entry",
     "concept": "ORDER BY and LIMIT",
     "story_template": "Investigators recovered access logs from a nearby secure site linked to {scene}. To rebuild the timeline after {victim}'s death, the academy wants the single most recent entry from that log.",
-    "description": "Show the suspect_id, location_id, access_date, and access_time for the most recent access log entry.",
+    "description": "Show suspect_id, location_id, access_date, and access_time for the most recent access log entry.",
     "tables": ["access_logs"],
     "expected_query": "SELECT suspect_id, location_id, access_date, access_time FROM access_logs ORDER BY access_date DESC, access_time DESC LIMIT 1;",
     "order_matters": true,
     "hints": [
       "Return exactly four columns: suspect_id, location_id, access_date, and access_time.",
-      "Use ORDER BY to sort from newest to oldest, then keep one row with LIMIT.",
-      "DESC means descending order, so larger or later values appear first. That helps you bring the newest date and time to the top."
+      "Sort from newest to oldest before you limit the result.",
+      "Use DESC on both date and time, then keep one row."
     ],
-    "success_explanation": "You ranked the logs by recency and isolated the newest entry for the investigation timeline.",
-    "case_update_template": "The newest access record places a suspect near a protected site after the crime window. That pushes the academy toward a financial motive tied to {motive}, so the next step is to find who has the heaviest transaction activity."
+    "reveal_hints": [
+      "The query should read from access_logs and return four columns.",
+      "Use ORDER BY access_date DESC, access_time DESC.",
+      "Keep only the top row with LIMIT 1.",
+      "Almost there: SELECT suspect_id, location_id, access_date, access_time FROM access_logs ORDER BY access_date DESC, access_time DESC LIMIT 1"
+    ],
+    "success_explanation": "You ranked the logs by recency and isolated the newest entry for the timeline.",
+    "case_update_template": "The newest access record places a suspect near a protected site after the crime window. That pushes the academy toward a money trail tied to {motive}, so the next step is to summarize or rank financial evidence."
   },
   {
-    "id": "level_4_transactions_by_suspect",
-    "level": 4,
-    "title": "Case 4: Money Trail",
+    "id": "level_5_biggest_transfer",
+    "level": 5,
+    "title": "Level 5: Biggest Transfer",
+    "concept": "ORDER BY and LIMIT",
+    "story_template": "Before anyone names a payer in the {case_name}, the forensic accountant wants the single largest bank transfer brought to the top of the stack.",
+    "description": "Show transaction_id, suspect_id, and amount for the largest bank transaction.",
+    "tables": ["bank_transactions"],
+    "expected_query": "SELECT transaction_id, suspect_id, amount FROM bank_transactions ORDER BY amount DESC LIMIT 1;",
+    "order_matters": true,
+    "hints": [
+      "Return three columns: transaction_id, suspect_id, and amount.",
+      "Sort the table so the biggest amount appears first.",
+      "Use DESC and LIMIT 1."
+    ],
+    "reveal_hints": [
+      "You need SELECT transaction_id, suspect_id, amount.",
+      "Read from bank_transactions and order by amount descending.",
+      "Use LIMIT 1 once the sort is correct.",
+      "Almost there: SELECT transaction_id, suspect_id, amount FROM bank_transactions ORDER BY amount DESC LIMIT 1"
+    ],
+    "success_explanation": "You sorted the transfer log and surfaced the single largest payment in the table.",
+    "case_update_template": "The biggest transfer becomes the academy's strongest financial clue. The team now wants a simple total or summary before moving into grouped patterns."
+  },
+  {
+    "id": "level_6_incident_total",
+    "level": 6,
+    "title": "Level 6: Count the Noise",
+    "concept": "Aggregation with COUNT",
+    "story_template": "The detectives keep hearing isolated claims around {scene}. Before sorting them, the academy wants one simple number: how many incident records exist at all.",
+    "description": "Show the total number of rows in the incidents table as incident_count.",
+    "tables": ["incidents"],
+    "expected_query": "SELECT COUNT(*) AS incident_count FROM incidents;",
+    "order_matters": true,
+    "hints": [
+      "This result should be one row and one column.",
+      "Use COUNT(*) to count all rows.",
+      "Rename the result column with AS incident_count."
+    ],
+    "reveal_hints": [
+      "The query starts with SELECT COUNT(*).",
+      "Read from incidents and alias the column.",
+      "Use AS incident_count.",
+      "Almost there: SELECT COUNT(*) AS incident_count FROM incidents"
+    ],
+    "success_explanation": "You used a basic aggregate to turn a whole table into one summary number.",
+    "case_update_template": "That total gives the academy scale, but not direction. The next stage of {case_name} is to summarize by category and see which pattern rises above the rest."
+  },
+  {
+    "id": "level_6_max_transfer",
+    "level": 6,
+    "title": "Level 6: Peak Transaction",
+    "concept": "Aggregation with MAX",
+    "story_template": "The chief does not want a ranked list yet, just the ceiling. For the {case_name}, find the single highest transaction amount in the bank log.",
+    "description": "Show the maximum amount from bank_transactions as highest_amount.",
+    "tables": ["bank_transactions"],
+    "expected_query": "SELECT MAX(amount) AS highest_amount FROM bank_transactions;",
+    "order_matters": true,
+    "hints": [
+      "You only need one value back.",
+      "Use MAX on the amount column.",
+      "Rename the result as highest_amount."
+    ],
+    "reveal_hints": [
+      "The function you need is MAX(amount).",
+      "Read from bank_transactions.",
+      "Alias the result with AS highest_amount.",
+      "Almost there: SELECT MAX(amount) AS highest_amount FROM bank_transactions"
+    ],
+    "success_explanation": "You used an aggregate to collapse the table down to its highest transfer amount.",
+    "case_update_template": "The ceiling is clear now. The academy's next move is to group records and find which suspect or incident pattern dominates the board."
+  },
+  {
+    "id": "level_7_transactions_by_suspect",
+    "level": 7,
+    "title": "Level 7: Money Trail",
     "concept": "GROUP BY and aggregations",
     "story_template": "A forensic accountant finds a cluster of suspicious transfers around the night of the crime at {scene}. Before anyone starts naming names, the academy wants a simple summary that shows which suspect_id appears most often in the bank transactions table.",
     "description": "Show the suspect_id and transaction count for the suspect with the highest number of bank transactions.",
@@ -65,16 +299,142 @@
     "order_matters": true,
     "hints": [
       "The result should have two columns: suspect_id and a transaction count.",
-      "Count how many transaction rows belong to each suspect_id, then rank those counts.",
-      "GROUP BY builds one group per suspect_id. DESC sorts the largest count first so LIMIT 1 can keep the top result."
+      "Count rows per suspect_id with GROUP BY.",
+      "Sort the counts descending and keep the top row."
+    ],
+    "reveal_hints": [
+      "Use GROUP BY suspect_id.",
+      "The count should be COUNT(*) AS transaction_count.",
+      "Order by transaction_count DESC and use LIMIT 1.",
+      "Almost there: SELECT suspect_id, COUNT(*) AS transaction_count FROM bank_transactions GROUP BY suspect_id ORDER BY transaction_count DESC LIMIT 1"
     ],
     "success_explanation": "You grouped the transactions by suspect_id, counted the rows, and isolated the busiest financial trail.",
-    "case_update_template": "One suspect rises above the others in the money trail around {stolen_item}, but the chief still needs something tangible before making an arrest. The academy now turns to the evidence room to connect a person directly to a physical clue."
+    "case_update_template": "One suspect rises above the others in the money trail around {stolen_item}, but the chief still needs a wider pattern before making an arrest. The academy now turns from totals to connected records."
   },
   {
-    "id": "level_5_suspects_with_evidence",
-    "level": 5,
-    "title": "Case 5: Final Link",
+    "id": "level_7_incidents_by_type",
+    "level": 7,
+    "title": "Level 7: Pattern of Incidents",
+    "concept": "GROUP BY and aggregations",
+    "story_template": "The scattered reports around {scene} need structure. The academy wants to know which incident type appears most often before assigning more investigators.",
+    "description": "Show the incident_type and incident count for the most common incident type.",
+    "tables": ["incidents"],
+    "expected_query": "SELECT incident_type, COUNT(*) AS incident_count FROM incidents GROUP BY incident_type ORDER BY incident_count DESC, incident_type ASC LIMIT 1;",
+    "order_matters": true,
+    "hints": [
+      "Return incident_type and a count.",
+      "Group rows by incident_type.",
+      "Order by the count descending and use incident_type as a tie-breaker."
+    ],
+    "reveal_hints": [
+      "Use COUNT(*) AS incident_count with GROUP BY incident_type.",
+      "Sort by incident_count DESC.",
+      "Break ties with incident_type ASC, then LIMIT 1.",
+      "Almost there: SELECT incident_type, COUNT(*) AS incident_count FROM incidents GROUP BY incident_type ORDER BY incident_count DESC, incident_type ASC LIMIT 1"
+    ],
+    "success_explanation": "You summarized the incident log by type and pulled the strongest pattern to the top.",
+    "case_update_template": "The top incident pattern gives the academy a better sense of pressure points in {case_name}. The next stage is to connect rows from different tables, not just summarize one table at a time."
+  },
+  {
+    "id": "level_8_locations_with_incidents",
+    "level": 8,
+    "title": "Level 8: Connect the Scene Board",
+    "concept": "JOIN",
+    "story_template": "The detectives no longer want separate lists. For the {case_name}, connect each incident record to its location name so the board reads like one coherent scene file.",
+    "description": "Show location_name and incident_type for every incident by joining locations and incidents.",
+    "tables": ["locations", "incidents"],
+    "expected_query": "SELECT l.location_name, i.incident_type FROM incidents i JOIN locations l ON i.location_id = l.location_id;",
+    "order_matters": false,
+    "hints": [
+      "location_name is in locations, but incident_type is in incidents.",
+      "You need a JOIN because the columns live in different tables.",
+      "Match incidents.location_id to locations.location_id."
+    ],
+    "reveal_hints": [
+      "Alias the tables if that helps: incidents i and locations l.",
+      "Join on i.location_id = l.location_id.",
+      "Select l.location_name and i.incident_type.",
+      "Almost there: SELECT l.location_name, i.incident_type FROM incidents i JOIN locations l ON i.location_id = l.location_id"
+    ],
+    "success_explanation": "You connected location names to incident rows, which is the first major step from one-table thinking to relational thinking.",
+    "case_update_template": "The scene board finally reads like one investigation instead of separate ledgers. The academy now wants a second join on a different part of the case to make sure the skill holds."
+  },
+  {
+    "id": "level_8_suspects_with_vehicles",
+    "level": 8,
+    "title": "Level 8: Vehicle Link",
+    "concept": "JOIN",
+    "story_template": "The team suspects transportation mattered after the chaos at {scene}. Pair each vehicle record with the suspect who owns it so the chase board makes sense.",
+    "description": "Show suspect name and vehicle_type for every joined suspect and vehicle row.",
+    "tables": ["suspects", "vehicles"],
+    "expected_query": "SELECT s.name, v.vehicle_type FROM suspects s JOIN vehicles v ON s.suspect_id = v.owner_suspect_id;",
+    "order_matters": false,
+    "hints": [
+      "name is in suspects, vehicle_type is in vehicles.",
+      "Join the two tables using the suspect identifier.",
+      "The match is suspects.suspect_id to vehicles.owner_suspect_id."
+    ],
+    "reveal_hints": [
+      "Use aliases like suspects s and vehicles v.",
+      "Join on s.suspect_id = v.owner_suspect_id.",
+      "Select s.name and v.vehicle_type.",
+      "Almost there: SELECT s.name, v.vehicle_type FROM suspects s JOIN vehicles v ON s.suspect_id = v.owner_suspect_id"
+    ],
+    "success_explanation": "You tied people to vehicles in one result, which is exactly what joins are for in an investigation database.",
+    "case_update_template": "The transport board is finally readable. One more level of filtering inside a join should prepare the academy for the final evidence wall."
+  },
+  {
+    "id": "level_9_fingerprint_links",
+    "level": 9,
+    "title": "Level 9: Fingerprint Focus",
+    "concept": "JOIN with WHERE",
+    "story_template": "Not every evidence item matters equally. For the {case_name}, isolate only the fingerprint links so the detectives can focus on the strongest physical lead first.",
+    "description": "Show suspect name and evidence_type for joined evidence rows where evidence_type is Fingerprint.",
+    "tables": ["suspects", "evidence_inventory"],
+    "expected_query": "SELECT s.name, e.evidence_type FROM suspects s JOIN evidence_inventory e ON s.suspect_id = e.linked_suspect_id WHERE e.evidence_type = 'Fingerprint';",
+    "order_matters": false,
+    "hints": [
+      "This is still a JOIN, but now you also need a filter.",
+      "The evidence_type column lives in evidence_inventory.",
+      "Join first, then keep only rows where evidence_type = 'Fingerprint'."
+    ],
+    "reveal_hints": [
+      "Select s.name and e.evidence_type.",
+      "Join suspects s to evidence_inventory e on suspect_id.",
+      "Add WHERE e.evidence_type = 'Fingerprint'.",
+      "Almost there: SELECT s.name, e.evidence_type FROM suspects s JOIN evidence_inventory e ON s.suspect_id = e.linked_suspect_id WHERE e.evidence_type = 'Fingerprint'"
+    ],
+    "success_explanation": "You combined tables and then filtered the joined result, which is the natural next step after a basic join.",
+    "case_update_template": "The fingerprint-only board strips away weaker clues. The academy is now ready for a broader final evidence briefing on the {case_name}."
+  },
+  {
+    "id": "level_9_suv_owners",
+    "level": 9,
+    "title": "Level 9: SUV Owners",
+    "concept": "JOIN with WHERE",
+    "story_template": "A witness insists the getaway vehicle was an SUV. Pull a joined list of the suspect names and registered cities for every SUV owner connected to the {case_name}.",
+    "description": "Show suspect name and registered_city for joined vehicle rows where vehicle_type is SUV.",
+    "tables": ["suspects", "vehicles"],
+    "expected_query": "SELECT s.name, v.registered_city FROM suspects s JOIN vehicles v ON s.suspect_id = v.owner_suspect_id WHERE v.vehicle_type = 'SUV';",
+    "order_matters": false,
+    "hints": [
+      "registered_city is in vehicles, while the suspect name is in suspects.",
+      "Join the tables first.",
+      "Then filter the joined result to vehicle_type = 'SUV'."
+    ],
+    "reveal_hints": [
+      "Select s.name and v.registered_city.",
+      "Join suspects s to vehicles v on s.suspect_id = v.owner_suspect_id.",
+      "Add WHERE v.vehicle_type = 'SUV'.",
+      "Almost there: SELECT s.name, v.registered_city FROM suspects s JOIN vehicles v ON s.suspect_id = v.owner_suspect_id WHERE v.vehicle_type = 'SUV'"
+    ],
+    "success_explanation": "You joined and filtered in the same query, narrowing the vehicle board to the witness-supported lead.",
+    "case_update_template": "The SUV board gives the case team one last tightened view before the full evidence wall goes up."
+  },
+  {
+    "id": "level_10_suspects_with_evidence",
+    "level": 10,
+    "title": "Level 10: Final Link",
     "concept": "JOIN",
     "story_template": "The final board is almost ready. To close the {case_name}, the academy must connect each physical evidence item to the suspect attached to it and present the result in a briefing-friendly form.",
     "description": "Show the suspect name and evidence type for every suspect linked to an evidence item.",
@@ -84,9 +444,39 @@
     "hints": [
       "The result should contain two columns: the suspect name and the evidence type.",
       "Use a JOIN because the name is in suspects and the evidence link is in evidence_inventory.",
-      "A JOIN connects rows from two tables through matching keys. Here, suspect_id is the link to look for."
+      "Match suspect_id to linked_suspect_id."
     ],
-    "success_explanation": "You combined two related tables so the academy could see people and evidence together in one result.",
+    "reveal_hints": [
+      "Select s.name and e.evidence_type.",
+      "Join suspects s to evidence_inventory e.",
+      "The link is s.suspect_id = e.linked_suspect_id.",
+      "Almost there: SELECT s.name, e.evidence_type FROM suspects s JOIN evidence_inventory e ON s.suspect_id = e.linked_suspect_id"
+    ],
+    "success_explanation": "You combined the final evidence table with the suspect table so the academy could read people and physical clues together in one result.",
     "case_update_template": "The evidence wall finally locks the timeline, the money trail, and the physical clues into one coherent picture. The academy closes the {case_name}, names the culprit behind {victim}'s death, and your first investigation ends with the crime solved."
+  },
+  {
+    "id": "level_10_evidence_locations",
+    "level": 10,
+    "title": "Level 10: Evidence Wall",
+    "concept": "Multi-table JOIN",
+    "story_template": "For the closing presentation on the {case_name}, the academy wants the final wall to show not just who is linked to evidence, but where that evidence was found.",
+    "description": "Show suspect name and location_name for every evidence item by joining suspects, evidence_inventory, and locations.",
+    "tables": ["suspects", "evidence_inventory", "locations"],
+    "expected_query": "SELECT s.name, l.location_name FROM suspects s JOIN evidence_inventory e ON s.suspect_id = e.linked_suspect_id JOIN locations l ON e.found_location_id = l.location_id;",
+    "order_matters": false,
+    "hints": [
+      "You need data from three tables this time.",
+      "First join suspects to evidence_inventory, then join evidence_inventory to locations.",
+      "Select s.name and l.location_name."
+    ],
+    "reveal_hints": [
+      "Use suspects s, evidence_inventory e, and locations l.",
+      "The first join is s.suspect_id = e.linked_suspect_id.",
+      "The second join is e.found_location_id = l.location_id.",
+      "Almost there: SELECT s.name, l.location_name FROM suspects s JOIN evidence_inventory e ON s.suspect_id = e.linked_suspect_id JOIN locations l ON e.found_location_id = l.location_id"
+    ],
+    "success_explanation": "You closed the case with a fuller relational picture by tying each suspect to the location where the linked evidence was found.",
+    "case_update_template": "With the suspect board, evidence wall, and scene map finally connected, the academy seals the {case_name} and clears your badge for the next investigation."
   }
 ]
