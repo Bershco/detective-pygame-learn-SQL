@@ -819,7 +819,8 @@ class DetectiveDesktopApp:
             f"Games played: {len(self.leaderboard_entries)}", True, DARK
         )
         self.screen.blit(header, (rect.x + 14, rect.y + 8))
-        self.screen.blit(games_label, (rect.x + 150, rect.y + 12))
+        games_x = rect.right - games_label.get_width() - 14
+        self.screen.blit(games_label, (games_x, rect.y + 12))
 
         columns = [("Rank", 18), ("Score", 78), ("Perfect", 150), ("Streak", 242), ("Time", 330)]
         for label, x_offset in columns:
