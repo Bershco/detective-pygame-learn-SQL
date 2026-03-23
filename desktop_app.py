@@ -12,18 +12,18 @@ except ModuleNotFoundError as error:
         "pygame is required for desktop_app.py. Install it with: pip install pygame"
     ) from error
 
+from app_paths import resource_path, user_data_dir
 from validation import execute_query, validate_query_result
 
 
-BASE_DIR = Path(__file__).parent
-CHALLENGES_PATH = BASE_DIR / "challenges.json"
-CRIME_STORIES_PATH = BASE_DIR / "crime_stories.json"
-LEADERBOARD_PATH = BASE_DIR / "leaderboard.json"
+CHALLENGES_PATH = resource_path("challenges.json")
+CRIME_STORIES_PATH = resource_path("crime_stories.json")
+LEADERBOARD_PATH = user_data_dir() / "leaderboard.json"
 CHARACTER_FILES = {
-    "Lead Detective Mara Voss": BASE_DIR / "animal_detective_3.png",
-    "Analyst Theo": BASE_DIR / "animal_detective_2.png",
-    "Desk Sergeant Imani": BASE_DIR / "animal_detective_4.png",
-    "Case Update": BASE_DIR / "animal_detective_1.png",
+    "Lead Detective Mara Voss": resource_path("animal_detective_3.png"),
+    "Analyst Theo": resource_path("animal_detective_2.png"),
+    "Desk Sergeant Imani": resource_path("animal_detective_4.png"),
+    "Case Update": resource_path("animal_detective_1.png"),
 }
 BADGE_MILESTONES = {3: "Bronze Streak", 5: "Silver Streak", 7: "Gold Streak"}
 REVEAL_THRESHOLDS = {10: 0, 20: 1, 30: 2, 40: 3}
