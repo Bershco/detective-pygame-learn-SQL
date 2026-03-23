@@ -678,7 +678,6 @@ class DetectiveDesktopApp:
             f"Streak: {self.current_streak}",
             f"Attempts: {state['attempts']}",
             f"Time: {format_duration(elapsed)}",
-            f"Completed: {len(self.completed_levels)}/10",
         ]
         y = 38
         for index, line in enumerate(progress_lines):
