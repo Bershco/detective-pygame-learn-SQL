@@ -27,6 +27,19 @@ CHARACTER_FILES = {
 }
 BADGE_MILESTONES = {3: "Bronze Streak", 5: "Silver Streak", 7: "Gold Streak"}
 REVEAL_THRESHOLDS = {10: 0, 20: 1, 30: 2, 40: 3}
+POST_ANSWER_EASTER_EGGS = {
+    50: "I already gave the answer away. What more do you want?",
+    55: "Seriously???",
+    60: "These additional hints are not part of the test. They are part of your file.",
+    65: "At this point, the enrichment center would like to remind you that excessive hint consumption is a sign of dependency.",
+    70: "You are still here. The query is also still here. Nothing has changed.",
+    75: "This was a triumph for persistence, if not for restraint.",
+    80: "The hints will continue until morale improves.",
+    85: "If you are waiting for a hidden shortcut, that was the shortcut.",
+    90: "Look at us. Still pressing. Still not satisfied.",
+    95: "The academy has concerns about your relationship with the hint button.",
+    100: "The cake is a lie.",
+}
 
 WINDOW_WIDTH = 1450
 WINDOW_HEIGHT = 930
@@ -686,14 +699,25 @@ class DetectiveDesktopApp:
         state["is_perfect_candidate"] = False
 
         if state["hint_count"] >= 42:
-            unlocked_text = f"Answer unlocked after 42 hints:\n{challenge['expected_query']}"
-            self._store_hint(state, unlocked_text)
-            self._set_feedback(
-                challenge_id,
-                "success",
-                unlocked_text,
-                reveal_query=True,
-            )
+            if state["hint_count"] == 42:
+                unlocked_text = f"Answer unlocked after 42 hints:\n{challenge['expected_query']}"
+                self._store_hint(state, unlocked_text)
+                self._set_feedback(
+                    challenge_id,
+                    "success",
+                    unlocked_text,
+                    reveal_query=True,
+                )
+                return
+
+            post_answer_line = POST_ANSWER_EASTER_EGGS.get(state["hint_count"])
+            if post_answer_line:
+                self._store_hint(state, post_answer_line)
+                self._set_feedback(
+                    challenge_id,
+                    "warning",
+                    post_answer_line,
+                )
             return
 
         if state["hint_count"] in REVEAL_THRESHOLDS:
