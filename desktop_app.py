@@ -361,21 +361,22 @@ class TextInput:
         if self.active and self.cursor_visible:
             current_line, segment_start, segment_end = wrapped_segments[cursor_segment_index]
             visible_cursor_line = cursor_segment_index - self.scroll_line_offset
-            current_column = min(
-                max(self.cursor_position - segment_start, 0),
-                len(current_line),
-            )
-            if self.cursor_position > segment_end:
-                current_column = len(current_line)
-            cursor_x = inner.x + font.size(current_line[:current_column])[0] + 2
-            cursor_y = inner.y + visible_cursor_line * line_height
-            pygame.draw.line(
-                screen,
-                DARK,
-                (cursor_x, cursor_y),
-                (cursor_x, cursor_y + font.get_height()),
-                2,
-            )
+            if 0 <= visible_cursor_line < visible_capacity:
+                current_column = min(
+                    max(self.cursor_position - segment_start, 0),
+                    len(current_line),
+                )
+                if self.cursor_position > segment_end:
+                    current_column = len(current_line)
+                cursor_x = inner.x + font.size(current_line[:current_column])[0] + 2
+                cursor_y = inner.y + visible_cursor_line * line_height
+                pygame.draw.line(
+                    screen,
+                    DARK,
+                    (cursor_x, cursor_y),
+                    (cursor_x, cursor_y + font.get_height()),
+                    2,
+                )
 
     def update(self, dt):
         self.cursor_timer += dt
