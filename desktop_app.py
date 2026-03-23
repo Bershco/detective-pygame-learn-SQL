@@ -692,10 +692,11 @@ class DetectiveDesktopApp:
     def _draw_left_panel(self):
         draw_rounded_rect(self.screen, PANEL, pygame.Rect(30, 150, 850, 750), radius=18)
         challenge = self.get_challenge()
+        case_title = challenge["title"].split(": ", 1)[-1]
         self._draw_avatar_bubble(
             pygame.Rect(50, 170, 810, 215),
             "Lead Detective Mara Voss",
-            f"{challenge['title']}\n\n{challenge['story']}",
+            f"{case_title}\n{challenge['story']}",
             bubble_color=CARD,
         )
         self._draw_avatar_bubble(
