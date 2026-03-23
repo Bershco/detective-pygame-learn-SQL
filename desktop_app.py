@@ -1081,7 +1081,8 @@ class DetectiveDesktopApp:
 
         row_y = inner_y + 30
         max_rows = 3 if rect.height < 150 else 4
-        for row in rows[:max_rows]:
+        displayed_rows = rows[:max_rows]
+        for row in displayed_rows:
             for idx, value in enumerate(row[:8]):
                 value_text = str(value)
                 value_rect = pygame.Rect(
@@ -1098,6 +1099,14 @@ class DetectiveDesktopApp:
                 rendered = self.tiny_font.render(value_text[:14], True, DARK)
                 self.screen.blit(rendered, (value_rect.x + 6, value_rect.y + 5))
             row_y += 28
+
+        if len(rows) > max_rows:
+            preview_note = self.tiny_font.render(
+                f"Showing {max_rows} of {len(rows)} rows in this query result.",
+                True,
+                MUTED,
+            )
+            self.screen.blit(preview_note, (rect.x + 16, row_y + 4))
 
     def _draw_text_block(self, text, font, color, x, y, width, max_lines=None):
         lines: list[str] = []
