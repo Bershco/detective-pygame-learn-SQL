@@ -174,28 +174,76 @@ class TextInput:
     def __init__(self, rect):
         self.rect = pygame.Rect(rect)
         self.text = ""
+        self.cursor_position = 0
         self.active = False
         self.cursor_visible = True
         self.cursor_timer = 0
 
     def set_text(self, text: str):
         self.text = text
+        self.cursor_position = len(text)
+
+    def _insert_text(self, inserted_text: str):
+        self.text = (
+            f"{self.text[:self.cursor_position]}{inserted_text}{self.text[self.cursor_position:]}"
+        )
+        self.cursor_position += len(inserted_text)
+
+    def _line_starts(self) -> list[int]:
+        starts = [0]
+        for index, character in enumerate(self.text):
+            if character == "\n":
+                starts.append(index + 1)
+        return starts
+
+    def _cursor_line_and_column(self) -> tuple[int, int, list[int]]:
+        line_starts = self._line_starts()
+        line_index = 0
+        for idx, start in enumerate(line_starts):
+            if start <= self.cursor_position:
+                line_index = idx
+            else:
+                break
+        column = self.cursor_position - line_starts[line_index]
+        return line_index, column, line_starts
+
+    def _move_vertical(self, direction: int):
+        line_index, column, line_starts = self._cursor_line_and_column()
+        target_line = line_index + direction
+        if target_line < 0 or target_line >= len(line_starts):
+            return
+        current_line_end = (
+            line_starts[target_line + 1] - 1
+            if target_line + 1 < len(line_starts)
+            else len(self.text)
+        )
+        target_column = min(column, current_line_end - line_starts[target_line])
+        self.cursor_position = line_starts[target_line] + max(0, target_column)
 
     def draw(self, screen, font):
         draw_rounded_rect(screen, CARD, self.rect, radius=14, border=2, border_color=ACCENT)
         inner = self.rect.inflate(-16, -16)
         lines = self.text.split("\n") or [""]
+        cursor_line_index, _, line_starts = self._cursor_line_and_column()
+        visible_start = max(0, len(lines) - 12)
+        if cursor_line_index < visible_start:
+            visible_start = cursor_line_index
+        visible_lines = lines[visible_start:visible_start + 12]
         y = inner.y
         line_height = font.get_height() + 4
-        for line in lines[-12:]:
+        for line in visible_lines:
             rendered = font.render(line, True, DARK)
             screen.blit(rendered, (inner.x, y))
             y += line_height
 
         if self.active and self.cursor_visible:
-            current_line = lines[-1] if lines else ""
+            current_line = lines[cursor_line_index] if lines else ""
+            visible_cursor_line = cursor_line_index - visible_start
             cursor_x = inner.x + font.size(current_line)[0] + 2
-            cursor_y = inner.y + (len(lines[-12:]) - 1) * line_height
+            current_line_start = line_starts[cursor_line_index]
+            current_column = self.cursor_position - current_line_start
+            cursor_x = inner.x + font.size(current_line[:current_column])[0] + 2
+            cursor_y = inner.y + visible_cursor_line * line_height
             pygame.draw.line(
                 screen,
                 DARK,
@@ -219,13 +267,25 @@ class TextInput:
             return
 
         if event.key == pygame.K_BACKSPACE:
-            self.text = self.text[:-1]
+            if self.cursor_position > 0:
+                self.text = (
+                    f"{self.text[:self.cursor_position - 1]}{self.text[self.cursor_position:]}"
+                )
+                self.cursor_position -= 1
         elif event.key == pygame.K_RETURN:
-            self.text += "\n"
+            self._insert_text("\n")
         elif event.key == pygame.K_TAB:
-            self.text += "    "
+            self._insert_text("    ")
+        elif event.key == pygame.K_LEFT:
+            self.cursor_position = max(0, self.cursor_position - 1)
+        elif event.key == pygame.K_RIGHT:
+            self.cursor_position = min(len(self.text), self.cursor_position + 1)
+        elif event.key == pygame.K_UP:
+            self._move_vertical(-1)
+        elif event.key == pygame.K_DOWN:
+            self._move_vertical(1)
         elif event.unicode and event.unicode.isprintable():
-            self.text += event.unicode
+            self._insert_text(event.unicode)
 
 
 class DetectiveDesktopApp:
