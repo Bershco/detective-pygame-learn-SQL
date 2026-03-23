@@ -346,9 +346,14 @@ class DetectiveDesktopApp:
         if missing:
             raise SystemExit(f"Missing challenge definitions for levels: {missing}")
 
+        route_count = min(len(grouped[level]) for level in expected_levels)
+        self.challenge_route_index = random.randrange(route_count) if route_count else 0
         self.story = random.choice(self.story_pool)
         self.selected_challenges = {
-            level: random.choice(grouped[level]) for level in expected_levels
+            level: grouped[level][self.challenge_route_index]
+            if self.challenge_route_index < len(grouped[level])
+            else random.choice(grouped[level])
+            for level in expected_levels
         }
         self.current_level = 1
         self.completed_levels: list[int] = []
@@ -447,6 +452,8 @@ class DetectiveDesktopApp:
 
     def open_level(self, level):
         if level > self.unlocked_level():
+            return
+        if level == self.current_level:
             return
         self.query_inputs[self.get_challenge()["id"]] = self.editor.text
         self.current_level = level
